@@ -112,16 +112,16 @@ const Sidebar = () => {
     display: "flex",
     alignItems: "center",
     gap: collapsed ? "0" : "12px",
-    padding: "11px 14px",                              // consistent spacing
+    padding: "11px 14px",
     borderRadius: "10px",
-    margin: "4px 12px",                                // cleaner margins
+    margin: "4px 12px",
     textDecoration: "none",
-    color: isActive ? "#2563EB" : colors.textMuted,    // active → blue
+    color: isActive ? "#2563EB" : colors.textMuted,
     backgroundColor: isActive ? colors.active : "transparent",
-    fontWeight: isActive ? "600" : "500",              // slightly bolder
+    fontWeight: isActive ? "600" : "500",
     transition: "all 0.2s ease",
     borderLeft: isActive ? `4px solid ${colors.activeBorder}` : "4px solid transparent",
-    paddingLeft: isActive ? "12px" : "16px",           // adjust for border
+    paddingLeft: isActive ? "12px" : "16px",
     justifyContent: collapsed ? "center" : "flex-start",
     whiteSpace: "nowrap",
     overflow: "hidden",
@@ -153,11 +153,10 @@ const Sidebar = () => {
         top: 0,
         overflow: "hidden",
         flexShrink: 0,
-        // ✨ Light mode shadow – gives the sidebar a floating effect
         boxShadow: isDark ? "none" : "0 1px 12px rgba(15,23,42,0.06)",
       }}
     >
-      {/* Logo Section – separate background for visual separation */}
+      {/* Logo Section – without blue box, with distinct brand font */}
       <div
         style={{
           display: "flex",
@@ -167,7 +166,6 @@ const Sidebar = () => {
           borderBottom: `1px solid ${colors.border}`,
           minHeight: "72px",
           transition: "border-color 0.3s ease",
-          // 👇 give logo area its own light background to pop
           backgroundColor: isDark ? "#111827" : "#FFFFFF",
         }}
       >
@@ -183,30 +181,28 @@ const Sidebar = () => {
             flex: collapsed ? "0" : "1",
           }}
         >
-          {/* 🎨 Gradient logo */}
-          <div
+          {/* Emoji only – no blue background */}
+          <span
             style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "8px",
-              background: "linear-gradient(135deg, #2563EB, #3B82F6)",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: "bold",
-              fontSize: "20px",
+              fontSize: "28px",          // larger emoji
+              lineHeight: 1,
               flexShrink: 0,
             }}
           >
-            T
-          </div>
+            🚛
+          </span>
           {!collapsed && (
             <span
               style={{
-                fontWeight: "600",
-                fontSize: "1.1rem",
-                color: colors.text,
+                fontFamily: "'Inter', 'Segoe UI', sans-serif",  // distinct font
+                fontWeight: 700,            // bold
+                fontSize: "1.25rem",        // larger than nav items
+                letterSpacing: "-0.02em",
+                color: isDark ? "#F9FAFB" : "#0F172A",
+                background: "linear-gradient(135deg, #2563EB, #3B82F6)", // optional gradient text
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
                 transition: "color 0.3s ease",
                 whiteSpace: "nowrap",
               }}
@@ -271,7 +267,7 @@ const Sidebar = () => {
         )}
       </div>
 
-      {/* Navigation */}
+      {/* Navigation – unchanged */}
       <nav
         style={{
           flex: 1,
@@ -332,7 +328,7 @@ const Sidebar = () => {
         })}
       </nav>
 
-      {/* Bottom Section */}
+      {/* Bottom Section – unchanged */}
       <div
         style={{
           borderTop: `1px solid ${colors.border}`,
