@@ -2,12 +2,13 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth, UserRole } from "./contexts/AuthContext";
 import Login from "./pages/Login";
+import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Logout from "./pages/Logout";
 import Sidebar from "./components/layout/Sidebar";
+import FleetPage from "./pages/FleetPage";
 
 // Placeholder components...
-const Fleet = () => <div style={{ padding: "2rem" }}>🚚 Fleet Page</div>;
 const Drivers = () => <div style={{ padding: "2rem" }}>👨‍✈️ Drivers Page</div>;
 const Trips = () => <div style={{ padding: "2rem" }}>📍 Trips Page</div>;
 const Maintenance = () => <div style={{ padding: "2rem" }}>🔧 Maintenance Page</div>;
@@ -19,13 +20,17 @@ const Settings = () => <div style={{ padding: "2rem" }}>⚙️ Settings Page</di
 const Users = () => <div style={{ padding: "2rem" }}>👤 User Management (ADMIN)</div>;
 const Forbidden = () => <div style={{ padding: "2rem" }}>⛔ 403 Forbidden</div>;
 
+// Layout: Sidebar only (no Navbar)
 const Layout = ({ children }: { children: React.ReactNode }) => (
   <div style={{ display: "flex", height: "100vh" }}>
     <Sidebar />
-    <main style={{ flex: 1, padding: "2rem", overflowY: "auto" }}>{children}</main>
+    <main style={{ flex: 1, padding: "2rem", overflowY: "auto" }}>
+      {children}
+    </main>
   </div>
 );
 
+// Route guards
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
   const { isAuthenticated, loading } = useAuth();
   if (loading) return <div style={{ padding: "2rem" }}>Loading...</div>;
@@ -52,50 +57,125 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/403" element={<Forbidden />} />
 
-          <Route path="/" element={
-            <PrivateRoute>
-              <Layout><Navigate to="/dashboard" replace /></Layout>
-            </PrivateRoute>
-          } />
-          <Route path="/dashboard" element={
-            <PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>
-          } />
-          <Route path="/fleet" element={
-            <PrivateRoute><Layout><Fleet /></Layout></PrivateRoute>
-          } />
-          <Route path="/drivers" element={
-            <PrivateRoute><Layout><Drivers /></Layout></PrivateRoute>
-          } />
-          <Route path="/trips" element={
-            <PrivateRoute><Layout><Trips /></Layout></PrivateRoute>
-          } />
-          <Route path="/maintenance" element={
-            <PrivateRoute><Layout><Maintenance /></Layout></PrivateRoute>
-          } />
-          <Route path="/fuel" element={
-            <PrivateRoute><Layout><Fuel /></Layout></PrivateRoute>
-          } />
-          <Route path="/analytics" element={
-            <PrivateRoute><Layout><Analytics /></Layout></PrivateRoute>
-          } />
-          <Route path="/documents" element={
-            <PrivateRoute><Layout><Documents /></Layout></PrivateRoute>
-          } />
-          <Route path="/notifications" element={
-            <PrivateRoute><Layout><Notifications /></Layout></PrivateRoute>
-          } />
-          <Route path="/settings" element={
-            <PrivateRoute><Layout><Settings /></Layout></PrivateRoute>
-          } />
-          <Route path="/users" element={
-            <RoleRoute allowedRoles={["ADMIN"]}>
-              <Layout><Users /></Layout>
-            </RoleRoute>
-          } />
+          {/* Protected routes with sidebar */}
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/fleet"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <FleetPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/drivers"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <Drivers />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/trips"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <Trips />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/maintenance"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <Maintenance />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/fuel"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <Fuel />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <Analytics />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/documents"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <Documents />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <Notifications />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <Settings />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <RoleRoute allowedRoles={["ADMIN"]}>
+                <Layout>
+                  <Users />
+                </Layout>
+              </RoleRoute>
+            }
+          />
+
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>
