@@ -29,14 +29,16 @@ async def create_user(db: AsyncSession, obj_in: UserCreate) -> User:
         email=obj_in.email.lower().strip(),
         hashed_password=hashed_pwd,
         full_name=obj_in.full_name,
+        role=obj_in.role,
         is_active=True,
-        is_superuser=False,
-        is_verified=False,
+        is_superuser=obj_in.is_superuser,
+        is_verified=True,
     )
     db.add(db_user)
     await db.commit()
     await db.refresh(db_user)
     return db_user
+
 
 
 async def update_user(
