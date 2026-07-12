@@ -31,17 +31,24 @@ app.core.database.async_session_maker = async_sessionmaker(
 
 @pytest.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
-    """Yields a fresh AsyncSession and cleans up user records after each test."""
+    """Yields a fresh AsyncSession and cleans up records after each test."""
     async with app.core.database.async_session_maker() as session:
         yield session
-        # Teardown: delete all users created during the test
+        # Teardown: delete all records in dependency order
         from sqlalchemy import delete
-        from app.models.user import User
+        from app.models import Expense, FuelLog, MaintenanceLog, Trip, Driver, Vehicle, User
         try:
+            await session.execute(delete(Expense))
+            await session.execute(delete(FuelLog))
+            await session.execute(delete(MaintenanceLog))
+            await session.execute(delete(Trip))
+            await session.execute(delete(Driver))
+            await session.execute(delete(Vehicle))
             await session.execute(delete(User))
             await session.commit()
         except Exception:
             await session.rollback()
+
 
 
 @pytest.fixture
