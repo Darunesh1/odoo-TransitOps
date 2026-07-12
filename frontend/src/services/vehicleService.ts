@@ -1,12 +1,5 @@
-import axios from 'axios';
+import api from "../api/axiosInstance";
 import { Vehicle, VehicleCreate, VehicleUpdate, VehicleStatus } from '../types/vehicle';
-
-const API_BASE = (import.meta as any).VITE_API_BASE || 'http://localhost:8000';
-
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return { Authorization: `Bearer ${token}` };
-};
 
 export const vehicleService = {
   getVehicles: async (params?: {
@@ -17,52 +10,34 @@ export const vehicleService = {
     skip?: number;
     limit?: number;
   }) => {
-    try {
-      const response = await axios.get<Vehicle[]>(`${API_BASE}/vehicles/`, {
-        headers: getAuthHeader(),
-        params,
-      });
-      return response.data;
-    } catch (error) {
-      console.error('GET /vehicles error:', error);
-      throw error;
-    }
+    const response = await api.get<Vehicle[]>("/vehicles/", {
+      params,
+    });
+    return response.data;
   },
 
   getAvailableVehicles: async () => {
-    const response = await axios.get<Vehicle[]>(`${API_BASE}/vehicles/available`, {
-      headers: getAuthHeader(),
-    });
+    const response = await api.get<Vehicle[]>("/vehicles/available");
     return response.data;
   },
 
   getVehicle: async (id: string) => {
-    const response = await axios.get<Vehicle>(`${API_BASE}/vehicles/${id}`, {
-      headers: getAuthHeader(),
-    });
+    const response = await api.get<Vehicle>(`/vehicles/${id}`);
     return response.data;
   },
 
   createVehicle: async (data: VehicleCreate) => {
-    const response = await axios.post<Vehicle>(`${API_BASE}/vehicles/`, data, {
-      headers: getAuthHeader(),
-    });
+    const response = await api.post<Vehicle>("/vehicles/", data);
     return response.data;
   },
 
   updateVehicle: async (id: string, data: VehicleUpdate) => {
-    const response = await axios.patch<Vehicle>(`${API_BASE}/vehicles/${id}`, data, {
-      headers: getAuthHeader(),
-    });
+    const response = await api.patch<Vehicle>(`/vehicles/${id}`, data);
     return response.data;
   },
 
   retireVehicle: async (id: string) => {
-    const response = await axios.post<Vehicle>(
-      `${API_BASE}/vehicles/${id}/retire`,
-      {},
-      { headers: getAuthHeader() }
-    );
+    const response = await api.post<Vehicle>(`/vehicles/${id}/retire`, {});
     return response.data;
   },
 };

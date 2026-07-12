@@ -1,15 +1,7 @@
-import axios from 'axios';
+import api from "../api/axiosInstance";
 import { AnalyticsSummary } from '../types/analytics';
 
-const API_BASE = (import.meta as any).VITE_API_BASE || 'http://localhost:8000';
-
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return { Authorization: `Bearer ${token}` };
-};
-
 export const analyticsService = {
-  // GET /analytics/summary
   getSummary: async (params?: {
     vehicle_id?: string;
     vehicle_type?: string;
@@ -17,14 +9,12 @@ export const analyticsService = {
     date_from?: string;
     date_to?: string;
   }) => {
-    const response = await axios.get<AnalyticsSummary>(`${API_BASE}/analytics/summary`, {
-      headers: getAuthHeader(),
+    const response = await api.get<AnalyticsSummary>("/analytics/summary", {
       params,
     });
     return response.data;
   },
 
-  // GET /analytics/export (CSV)
   exportCsv: async (params?: {
     vehicle_id?: string;
     vehicle_type?: string;
@@ -32,8 +22,7 @@ export const analyticsService = {
     date_from?: string;
     date_to?: string;
   }) => {
-    const response = await axios.get(`${API_BASE}/analytics/export`, {
-      headers: getAuthHeader(),
+    const response = await api.get("/analytics/export", {
       params,
       responseType: 'blob',
     });

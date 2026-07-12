@@ -1,15 +1,7 @@
-import axios from 'axios';
+import api from "../api/axiosInstance";
 import { Trip, TripCreate, TripUpdate, TripCompleteInput, TripStatus } from '../types/trip';
 
-const API_BASE = (import.meta as any).VITE_API_BASE || 'http://localhost:8000';
-
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return { Authorization: `Bearer ${token}` };
-};
-
 export const tripService = {
-  // GET /trips/
   getTrips: async (params?: {
     status?: TripStatus | string;
     vehicle_id?: string;
@@ -20,64 +12,39 @@ export const tripService = {
     skip?: number;
     limit?: number;
   }) => {
-    const response = await axios.get<Trip[]>(`${API_BASE}/trips/`, {
-      headers: getAuthHeader(),
+    const response = await api.get<Trip[]>("/trips/", {
       params,
     });
     return response.data;
   },
 
-  // GET /trips/{id}
   getTrip: async (id: string) => {
-    const response = await axios.get<Trip>(`${API_BASE}/trips/${id}`, {
-      headers: getAuthHeader(),
-    });
+    const response = await api.get<Trip>(`/trips/${id}`);
     return response.data;
   },
 
-  // POST /trips/
   createTrip: async (data: TripCreate) => {
-    const response = await axios.post<Trip>(`${API_BASE}/trips/`, data, {
-      headers: getAuthHeader(),
-    });
+    const response = await api.post<Trip>("/trips/", data);
     return response.data;
   },
 
-  // PATCH /trips/{id}
   updateTrip: async (id: string, data: TripUpdate) => {
-    const response = await axios.patch<Trip>(`${API_BASE}/trips/${id}`, data, {
-      headers: getAuthHeader(),
-    });
+    const response = await api.patch<Trip>(`/trips/${id}`, data);
     return response.data;
   },
 
-  // POST /trips/{id}/dispatch
   dispatchTrip: async (id: string) => {
-    const response = await axios.post<Trip>(
-      `${API_BASE}/trips/${id}/dispatch`,
-      {},
-      { headers: getAuthHeader() }
-    );
+    const response = await api.post<Trip>(`/trips/${id}/dispatch`, {});
     return response.data;
   },
 
-  // POST /trips/{id}/complete
   completeTrip: async (id: string, data: TripCompleteInput) => {
-    const response = await axios.post<Trip>(
-      `${API_BASE}/trips/${id}/complete`,
-      data,
-      { headers: getAuthHeader() }
-    );
+    const response = await api.post<Trip>(`/trips/${id}/complete`, data);
     return response.data;
   },
 
-  // POST /trips/{id}/cancel
   cancelTrip: async (id: string) => {
-    const response = await axios.post<Trip>(
-      `${API_BASE}/trips/${id}/cancel`,
-      {},
-      { headers: getAuthHeader() }
-    );
+    const response = await api.post<Trip>(`/trips/${id}/cancel`, {});
     return response.data;
   },
 };
