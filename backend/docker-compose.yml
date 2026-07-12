@@ -37,7 +37,7 @@ services:
       dockerfile: Dockerfile
     container_name: ${PROJECT_NAME:-template}_web
     restart: always
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: sh -c "pytest && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - "8000:8000"
     volumes:
