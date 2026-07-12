@@ -52,7 +52,7 @@ const FleetPage: React.FC = () => {
 
       console.log("🔍 Fetching vehicles with params:", params);
       const data = await vehicleService.getVehicles(params);
-      console.log("✅ Vehicles loaded:", data);
+      console.log("Vehicles loaded:", data);
       setVehicles(data);
     } catch (err: any) {
       console.error("❌ Error loading vehicles:", err);
