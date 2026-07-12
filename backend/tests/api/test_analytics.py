@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 from httpx import AsyncClient
@@ -160,7 +160,6 @@ async def test_analytics_access_permissions(
     client: AsyncClient,
     db_session: AsyncSession,
 ):
-    # Allowed roles
     for role_name in [
         "FINANCIAL_ANALYST",
         "FLEET_MANAGER",
@@ -173,14 +172,9 @@ async def test_analytics_access_permissions(
             role_name,
         )
 
-        response = await client.get(
-            "/analytics/summary",
-            headers=headers,
-        )
-
+        response = await client.get("/analytics/summary", headers=headers)
         assert response.status_code == 200
 
-    # Forbidden roles
     for role_name in [
         "DISPATCHER",
         "SAFETY_OFFICER",
@@ -192,17 +186,11 @@ async def test_analytics_access_permissions(
             role_name,
         )
 
-        response = await client.get(
-            "/analytics/summary",
-            headers=headers,
-        )
-
+        response = await client.get("/analytics/summary", headers=headers)
         assert response.status_code == 403
         assert response.json()["detail"] == "Insufficient permissions"
 
-    # Unauthenticated
     response = await client.get("/analytics/summary")
-
     assert response.status_code == 401
 
 
@@ -223,7 +211,6 @@ async def test_analytics_region_filter(
     )
     analyst = result.scalar_one()
 
-    # Two vehicles in different regions
     north_vehicle = Vehicle(
         registration_number="ANALYTICS-NORTH-1",
         name="North Truck",
@@ -249,7 +236,6 @@ async def test_analytics_region_filter(
     db_session.add_all([north_vehicle, south_vehicle])
     await db_session.commit()
 
-    # Fuel logs for both regions
     north_fuel = FuelLog(
         vehicle_id=north_vehicle.id,
         liters=50.0,
@@ -269,24 +255,107 @@ async def test_analytics_region_filter(
     db_session.add_all([north_fuel, south_fuel])
     await db_session.commit()
 
-    # Filter only North
+    response = await client.get("/analytics/summary?region=North", headers=headers)
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["total_fuel_cost"] == 1000.0
+    assert data["total_maintenance_cost"] == 0.0
+    assert data["total_operational_cost"] == 1000.0
+    assert data["total_revenue"] == 0.0
+    assert data["vehicle_roi"] == -10.0
+
+
+@pytest.mark.asyncio
+async def test_analytics_date_filter(
+    client: AsyncClient,
+    db_session: AsyncSession,
+):
+    headers = await create_user_with_role(
+        db_session,
+        client,
+        "date-analyst@test.com",
+        "FINANCIAL_ANALYST",
+    )
+
+    result = await db_session.execute(
+        select(User).where(User.email == "date-analyst@test.com")
+    )
+    analyst = result.scalar_one()
+
+    vehicle = Vehicle(
+        registration_number="ANALYTICS-DATE-1",
+        name="Date Filter Truck",
+        vehicle_type="Truck",
+        max_load_capacity=5000.0,
+        odometer=1000.0,
+        acquisition_cost=10000.0,
+        status=VehicleStatus.AVAILABLE,
+        region="North",
+    )
+
+    db_session.add(vehicle)
+    await db_session.commit()
+
+    today = date.today()
+    old_date = today - timedelta(days=30)
+
+    current_fuel = FuelLog(
+        vehicle_id=vehicle.id,
+        liters=50.0,
+        cost=1000.0,
+        date=today,
+        created_by=analyst.id,
+    )
+
+    old_fuel = FuelLog(
+        vehicle_id=vehicle.id,
+        liters=100.0,
+        cost=2000.0,
+        date=old_date,
+        created_by=analyst.id,
+    )
+
+    db_session.add_all([current_fuel, old_fuel])
+    await db_session.commit()
+
     response = await client.get(
-        "/analytics/summary?region=North",
+        "/analytics/summary",
+        params={
+            "date_from": today.isoformat(),
+            "date_to": today.isoformat(),
+        },
         headers=headers,
     )
 
     assert response.status_code == 200
 
     data = response.json()
-
-    # Only North vehicle's fuel cost should be included
     assert data["total_fuel_cost"] == 1000.0
-
-    # No maintenance or completed trips were created
-    assert data["total_maintenance_cost"] == 0.0
     assert data["total_operational_cost"] == 1000.0
-    assert data["total_revenue"] == 0.0
-
-    # ROI:
-    # (0 - 1000) / 10000 * 100 = -10%
     assert data["vehicle_roi"] == -10.0
+
+
+@pytest.mark.asyncio
+async def test_export_analytics_csv(
+    client: AsyncClient,
+    db_session: AsyncSession,
+):
+    headers = await create_user_with_role(
+        db_session,
+        client,
+        "export-analyst@test.com",
+        "FINANCIAL_ANALYST",
+    )
+
+    response = await client.get("/analytics/export", headers=headers)
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/csv")
+    assert "attachment" in response.headers["content-disposition"]
+
+    content = response.text
+    assert "Metric,Value" in content
+    assert "Total Fuel Cost" in content
+    assert "Vehicle ROI (%)" in content
