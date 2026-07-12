@@ -11,6 +11,7 @@ import DriversPage from "./pages/DriversPage";
 import TripDispatcherPage from "./pages/TripDispatcherPage";
 import MaintenancePage from './pages/MaintenancePage';
 import FuelExpensesPage from "./pages/FuelExpensesPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
 // Placeholder components for other pages
 const Trips = () => <div style={{ padding: "2rem" }}>📍 Trips Page</div>;
@@ -132,7 +133,7 @@ function App() {
             element={
               <PrivateRoute>
                 <Layout>
-                  <Analytics />
+                  <AnalyticsPage />
                 </Layout>
               </PrivateRoute>
             }
