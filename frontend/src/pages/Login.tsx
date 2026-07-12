@@ -17,7 +17,7 @@ const Login = () => {
   // Theme
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
 
-  // Account locking (5 attempts → 5 min lock)
+  // Account locking (5 attempts → 2 min lock)
   const [failedAttempts, setFailedAttempts] = useState<number>(() => {
     const stored = localStorage.getItem("loginFailedAttempts");
     return stored ? parseInt(stored, 10) : 0;
@@ -27,7 +27,50 @@ const Login = () => {
     return stored ? parseInt(stored, 10) : null;
   });
 
+  // Timer state (seconds remaining)
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    if (!lockUntil) return 0;
+    const remaining = Math.floor((lockUntil - Date.now()) / 1000);
+    return remaining > 0 ? remaining : 0;
+  });
+
+  // Check if locked
   const isLocked = lockUntil !== null && Date.now() < lockUntil;
+
+  // --- Timer effect ---
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    if (isLocked) {
+      // Update every second
+      interval = setInterval(() => {
+        const now = Date.now();
+        const remaining = Math.floor((lockUntil! - now) / 1000);
+        if (remaining <= 0) {
+          // Lock expired – clear it
+          clearInterval(interval!);
+          setLockUntil(null);
+          localStorage.removeItem("loginLockUntil");
+          setFailedAttempts(0);
+          localStorage.setItem("loginFailedAttempts", "0");
+          setTimeLeft(0);
+          setError("");
+        } else {
+          setTimeLeft(remaining);
+          // Update the error message with the timer
+          const minutes = Math.floor(remaining / 60);
+          const seconds = remaining % 60;
+          setError(
+            `Account locked. Try again in ${minutes}:${seconds.toString().padStart(2, "0")}`
+          );
+        }
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isLocked, lockUntil]);
 
   // Theme toggle
   useEffect(() => {
@@ -53,9 +96,13 @@ const Login = () => {
     if (lockTime) {
       setLockUntil(lockTime);
       localStorage.setItem("loginLockUntil", lockTime.toString());
+      // Compute initial time left
+      const remaining = Math.floor((lockTime - Date.now()) / 1000);
+      setTimeLeft(remaining > 0 ? remaining : 0);
     } else {
       setLockUntil(null);
       localStorage.removeItem("loginLockUntil");
+      setTimeLeft(0);
     }
   };
 
@@ -66,14 +113,12 @@ const Login = () => {
 
     // Check lock
     if (isLocked) {
-      const remaining = Math.ceil((lockUntil! - Date.now()) / 60000);
-      setError(`Account locked. Try again in ${remaining} minute(s).`);
+      // Timer will update the message automatically
       return;
     }
 
     setLoading(true);
     try {
-      // Call the context login
       await login(email, password);
 
       // Handle "Remember me"
@@ -86,15 +131,14 @@ const Login = () => {
       // Reset failed attempts on success
       updateLockState(0, null);
 
-      // Navigate to dashboard
       navigate("/dashboard");
     } catch (err: any) {
-      // Increment failed attempts
       const newAttempts = failedAttempts + 1;
       let lockTime: number | null = null;
       if (newAttempts >= 5) {
-        lockTime = Date.now() + 5 * 60 * 1000; // 5 minutes lock
-        setError("Too many failed attempts. Account locked for 5 minutes.");
+        // Lock for 2 minutes
+        lockTime = Date.now() + 2 * 60 * 1000;
+        setError("Too many failed attempts. Account locked for 2 minutes.");
       } else {
         const remaining = 5 - newAttempts;
         const msg = err.message || "Invalid credentials.";
