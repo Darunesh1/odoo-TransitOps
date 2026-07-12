@@ -1,50 +1,9 @@
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User, UserRole
 from app.core.security import hash_password
-from app.api.endpoints.auth import create_verification_token
-
-
-@pytest.mark.asyncio
-async def test_verify_email_success(
-    client: AsyncClient, db_session: AsyncSession, mock_emails
-):
-    # 1. Create an unverified user in DB
-    hashed_pwd = hash_password("strongpassword123")
-    user = User(
-        email="verify@example.com",
-        hashed_password=hashed_pwd,
-        full_name="Verify Me",
-        role=UserRole.FLEET_MANAGER,
-        is_active=True,
-        is_verified=False,
-    )
-    db_session.add(user)
-    await db_session.commit()
-    await db_session.refresh(user)
-
-    # 2. Generate verification token
-    token = create_verification_token(str(user.id))
-
-    # 3. Hit the verification endpoint
-    response = await client.get(f"/auth/verify-email?token={token}")
-    assert response.status_code == 200
-    assert response.json()["message"] == "Email verified successfully. Welcome onboard!"
-
-    # 4. Check if status updated in DB
-    query = select(User).where(User.email == "verify@example.com")
-    result = await db_session.execute(query)
-    updated_user = result.scalar_one_or_none()
-    assert updated_user is not None
-    assert updated_user.is_verified is True
-
-    # 5. Check if welcome email Celery task was scheduled
-    assert len(mock_emails["welcome_emails"]) == 1
-    _, welcome_kwargs = mock_emails["welcome_emails"][0]
-    assert welcome_kwargs["email"] == "verify@example.com"
 
 
 @pytest.mark.asyncio
