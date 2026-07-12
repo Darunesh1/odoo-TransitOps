@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth, UserRole } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { UserRole } from "./types/user";
 import Login from "./pages/Login";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
@@ -12,6 +13,7 @@ import TripDispatcherPage from "./pages/TripDispatcherPage";
 import MaintenancePage from './pages/MaintenancePage';
 import FuelExpensesPage from "./pages/FuelExpensesPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import UserManagement from "./pages/UserManagement";
 
 // Placeholder components for other pages
 const Trips = () => <div style={{ padding: "2rem" }}>📍 Trips Page</div>;
@@ -21,7 +23,6 @@ const Analytics = () => <div style={{ padding: "2rem" }}>📊 Analytics Page</di
 const Documents = () => <div style={{ padding: "2rem" }}>📄 Documents Page</div>;
 const Notifications = () => <div style={{ padding: "2rem" }}>🔔 Notifications Page</div>;
 const Settings = () => <div style={{ padding: "2rem" }}>⚙️ Settings Page</div>;
-const Users = () => <div style={{ padding: "2rem" }}>👤 User Management (ADMIN)</div>;
 const Forbidden = () => <div style={{ padding: "2rem" }}>⛔ 403 Forbidden</div>;
 
 // Layout: Sidebar only (no Navbar)
@@ -51,9 +52,11 @@ const RoleRoute = ({
   const { user, loading, isAuthenticated } = useAuth();
   if (loading) return <div style={{ padding: "2rem" }}>Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return user && allowedRoles.includes(user.role)
-    ? children
-    : <Navigate to="/403" replace />;
+  const hasAccess = user && (
+    user.roles.includes("ADMIN") ||
+    user.roles.some((r) => allowedRoles.includes(r))
+  );
+  return hasAccess ? children : <Navigate to="/403" replace />;
 };
 
 function App() {
@@ -173,7 +176,7 @@ function App() {
             element={
               <RoleRoute allowedRoles={["ADMIN"]}>
                 <Layout>
-                  <Users />
+                  <UserManagement />
                 </Layout>
               </RoleRoute>
             }
