@@ -31,6 +31,11 @@ const MaintenancePage: React.FC = () => {
 
   // Search filter
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [typeFilter, setTypeFilter] = useState<string>("");
+  const [vehicleFilter, setVehicleFilter] = useState<string>("");
+  const [startDateFilter, setStartDateFilter] = useState<string>("");
+  const [endDateFilter, setEndDateFilter] = useState<string>("");
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
@@ -109,6 +114,11 @@ const MaintenancePage: React.FC = () => {
       const [logsData, allVehicles] = await Promise.all([
         maintenanceService.getMaintenanceLogs({
           search: searchTerm || undefined,
+          status: statusFilter ? (statusFilter as any) : undefined,
+          maintenance_type: typeFilter || undefined,
+          vehicle_id: vehicleFilter || undefined,
+          start_date: startDateFilter || undefined,
+          end_date: endDateFilter || undefined,
           limit: 100,
         }),
         vehicleService.getVehicles({ limit: 100 }),
@@ -148,7 +158,8 @@ const MaintenancePage: React.FC = () => {
 
   useEffect(() => {
     loadAllData();
-  }, [searchTerm]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, statusFilter, typeFilter, vehicleFilter, startDateFilter, endDateFilter]);
 
   // ─── Form Handlers ──────────────────────────────────────
   const handleFormChange = (
@@ -324,12 +335,13 @@ const MaintenancePage: React.FC = () => {
         </button>
       </div>
 
-      {/* Filters – only search */}
+      {/* Filters */}
       <div className="maintenance-filters" style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "24px", alignItems: "center" }}>
+        {/* Search */}
         <div style={{ flex: 1, minWidth: "200px" }}>
           <input
             type="text"
-            placeholder="Search by vehicle, type, description..."
+            placeholder="Search description, type, etc..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
@@ -346,7 +358,161 @@ const MaintenancePage: React.FC = () => {
             }}
           />
         </div>
-        <button className="btn-secondary" style={{ padding: "10px 20px", backgroundColor: isDark ? "#374151" : "#f1f5f9", border: `1px solid ${colors.border}`, borderRadius: "8px", fontSize: "14px", fontWeight: 500, cursor: "pointer", transition: "background-color 0.2s", color: colors.text }} onClick={loadAllData}>
+
+        {/* Status Dropdown */}
+        <div style={{ minWidth: "150px" }}>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              border: `1px solid ${colors.inputBorder}`,
+              borderRadius: "8px",
+              fontSize: "14px",
+              backgroundColor: colors.inputBg,
+              color: colors.text,
+              outline: "none",
+              cursor: "pointer",
+            }}
+          >
+            <option value="">All Statuses</option>
+            <option value="ACTIVE">Active</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
+
+        {/* Vehicle Dropdown */}
+        <div style={{ minWidth: "180px" }}>
+          <select
+            value={vehicleFilter}
+            onChange={(e) => setVehicleFilter(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              border: `1px solid ${colors.inputBorder}`,
+              borderRadius: "8px",
+              fontSize: "14px",
+              backgroundColor: colors.inputBg,
+              color: colors.text,
+              outline: "none",
+              cursor: "pointer",
+            }}
+          >
+            <option value="">All Vehicles</option>
+            {Object.values(vehiclesMap).map((vehicle) => (
+              <option key={vehicle.id} value={vehicle.id}>
+                {vehicle.registration_number} - {vehicle.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Type Filter */}
+        <div style={{ minWidth: "150px" }}>
+          <input
+            type="text"
+            placeholder="Type (e.g. Engine)..."
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px 16px",
+              border: `1px solid ${colors.inputBorder}`,
+              borderRadius: "8px",
+              fontSize: "14px",
+              backgroundColor: colors.inputBg,
+              color: colors.text,
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        {/* Start Date */}
+        <div style={{ minWidth: "160px" }}>
+          <input
+            type="date"
+            placeholder="Start date"
+            value={startDateFilter}
+            onChange={(e) => setStartDateFilter(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              border: `1px solid ${colors.inputBorder}`,
+              borderRadius: "8px",
+              fontSize: "14px",
+              backgroundColor: colors.inputBg,
+              color: colors.text,
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        {/* End Date */}
+        <div style={{ minWidth: "160px" }}>
+          <input
+            type="date"
+            placeholder="End date"
+            value={endDateFilter}
+            onChange={(e) => setEndDateFilter(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              border: `1px solid ${colors.inputBorder}`,
+              borderRadius: "8px",
+              fontSize: "14px",
+              backgroundColor: colors.inputBg,
+              color: colors.text,
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <button
+          className="btn-secondary"
+          style={{
+            padding: "10px 20px",
+            backgroundColor: isDark ? "#374151" : "#f1f5f9",
+            border: `1px solid ${colors.border}`,
+            borderRadius: "8px",
+            fontSize: "14px",
+            fontWeight: 500,
+            cursor: "pointer",
+            transition: "background-color 0.2s",
+            color: colors.text,
+          }}
+          onClick={() => {
+            setSearchTerm("");
+            setStatusFilter("");
+            setVehicleFilter("");
+            setTypeFilter("");
+            setStartDateFilter("");
+            setEndDateFilter("");
+            loadAllData();
+          }}
+        >
+          Clear
+        </button>
+
+        <button
+          className="btn-secondary"
+          style={{
+            padding: "10px 20px",
+            backgroundColor: isDark ? "#374151" : "#f1f5f9",
+            border: `1px solid ${colors.border}`,
+            borderRadius: "8px",
+            fontSize: "14px",
+            fontWeight: 500,
+            cursor: "pointer",
+            transition: "background-color 0.2s",
+            color: colors.text,
+          }}
+          onClick={loadAllData}
+        >
           Refresh
         </button>
       </div>
