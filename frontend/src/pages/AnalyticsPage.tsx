@@ -125,19 +125,97 @@ const AnalyticsPage: React.FC = () => {
 
   // ─── Export PDF ─────────────────────────────────────────
   const pdfRef = useRef<HTMLDivElement>(null);
+  const timestampRef = useRef<HTMLSpanElement>(null);
 
   const handleExportPdf = async () => {
     if (!pdfRef.current) return;
+
+    // Update timestamp to current date/time
+    if (timestampRef.current) {
+      const now = new Date();
+      const formatted = now.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+      timestampRef.current.textContent = formatted;
+    }
+
+    const pdfElement = pdfRef.current;
+    
+    // Store original styles for restoration
+    const originalStyles = {
+      backgroundColor: pdfElement.style.backgroundColor,
+      color: pdfElement.style.color,
+      borderColor: pdfElement.style.borderColor,
+      boxShadow: pdfElement.style.boxShadow,
+      padding: pdfElement.style.padding,
+    };
+
+    // Force clean white background for PDF - this overrides the theme only for export
+    pdfElement.style.backgroundColor = '#ffffff';
+    pdfElement.style.color = '#0f172a';
+    pdfElement.style.borderColor = '#e2e8f0';
+    pdfElement.style.boxShadow = 'none';
+    pdfElement.style.padding = '32px';
+
+    // Apply PDF-friendly styles to all child elements
+    const cards = pdfElement.querySelectorAll('.kpi-card, .chart-card, .vehicle-card');
+    cards.forEach((card: any) => {
+      card.style.backgroundColor = '#f8fafc';
+      card.style.borderColor = '#e2e8f0';
+      card.style.color = '#0f172a';
+      card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+    });
+
+    // Fix the header for PDF
+    const header = pdfElement.querySelector('[style*="borderBottom"]');
+    if (header) {
+      (header as HTMLElement).style.borderBottomColor = '#2563eb';
+    }
+
     try {
-      const canvas = await html2canvas(pdfRef.current, { scale: 2 });
+      const canvas = await html2canvas(pdfElement, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+        allowTaint: true,
+        useCORS: true
+      });
+
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
       const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Add the image to PDF
       pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-      pdf.save("analytics_report.pdf");
+      pdf.save("transitops_analytics_report.pdf");
     } catch (err) {
+      console.error("PDF export failed:", err);
       alert("PDF export failed");
+    } finally {
+      // Restore original themed styles
+      pdfElement.style.backgroundColor = originalStyles.backgroundColor || '';
+      pdfElement.style.color = originalStyles.color || '';
+      pdfElement.style.borderColor = originalStyles.borderColor || '';
+      pdfElement.style.boxShadow = originalStyles.boxShadow || '';
+      pdfElement.style.padding = originalStyles.padding || '32px';
+
+      cards.forEach((card: any) => {
+        card.style.backgroundColor = '';
+        card.style.borderColor = '';
+        card.style.color = '';
+        card.style.boxShadow = '';
+      });
+
+      // Restore header
+      if (header) {
+        (header as HTMLElement).style.borderBottomColor = '';
+      }
     }
   };
 
@@ -160,7 +238,6 @@ const AnalyticsPage: React.FC = () => {
     errorText: isDark ? "#fca5a5" : "#b91c1c",
   };
 
-  // Chart colors
   const chartColors = ["#2563eb", "#10b981", "#f59e0b", "#ef4444"];
 
   return (
@@ -250,7 +327,45 @@ const AnalyticsPage: React.FC = () => {
         <div style={{ textAlign: "center", padding: "40px", color: colors.textMuted }}>Loading analytics...</div>
       ) : summary ? (
         // ─── PDF Content Wrapper ─────────────────────────────
-        <div ref={pdfRef}>
+        // This div uses themed colours for the web view.
+        // During PDF export, we temporarily override them to white.
+        <div
+          ref={pdfRef}
+          style={{
+            backgroundColor: colors.cardBg,
+            color: colors.text,
+            border: `1px solid ${colors.border}`,
+            borderRadius: "12px",
+            padding: "32px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+            transition: "background-color 0.3s, color 0.3s, border-color 0.3s",
+          }}
+        >
+          {/* Report Header */}
+          <div style={{
+            borderBottom: `2px solid ${isDark ? '#3b82f6' : '#2563eb'}`,
+            paddingBottom: "16px",
+            marginBottom: "24px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "8px"
+          }}>
+            <h1 style={{
+              fontSize: "24px",
+              fontWeight: 700,
+              margin: 0,
+              color: '#000000',
+              letterSpacing: "-0.02em"
+            }}>
+              TransitOps Analytics Report
+            </h1>
+            <div style={{ fontSize: "14px", color: colors.textMuted }}>
+              Generated: <span ref={timestampRef}>{new Date().toLocaleString()}</span>
+            </div>
+          </div>
+
           {/* KPI Cards */}
           <div className="kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "24px" }}>
             {[
@@ -259,7 +374,14 @@ const AnalyticsPage: React.FC = () => {
               { label: "Operational Cost", value: formatCurrency(summary.total_operational_cost), icon: "💰", color: "#f59e0b" },
               { label: "Vehicle ROI", value: `${summary.vehicle_roi}%`, icon: "📈", color: "#ef4444" },
             ].map((kpi) => (
-              <div key={kpi.label} className="kpi-card" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+              <div key={kpi.label} className="kpi-card" style={{
+                backgroundColor: isDark ? "#374151" : "#f8fafc",
+                border: `1px solid ${colors.border}`,
+                borderRadius: "12px",
+                padding: "16px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                color: colors.text,
+              }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ fontSize: "24px" }}>{kpi.icon}</span>
                   <span style={{ fontSize: "14px", color: colors.textMuted }}>{kpi.label}</span>
@@ -274,8 +396,13 @@ const AnalyticsPage: React.FC = () => {
           {/* Charts */}
           <div className="chart-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
             {/* Monthly Revenue */}
-            <div style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 600, margin: "0 0 12px 0" }}>Monthly Revenue</h3>
+            <div className="chart-card" style={{
+              backgroundColor: isDark ? "#374151" : "#f8fafc",
+              border: `1px solid ${colors.border}`,
+              borderRadius: "12px",
+              padding: "16px"
+            }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, margin: "0 0 12px 0", color: colors.text }}>Monthly Revenue</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={generateMonthlyRevenue()} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
@@ -288,8 +415,13 @@ const AnalyticsPage: React.FC = () => {
             </div>
 
             {/* Cost Breakdown */}
-            <div style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 600, margin: "0 0 12px 0" }}>Cost Breakdown</h3>
+            <div className="chart-card" style={{
+              backgroundColor: isDark ? "#374151" : "#f8fafc",
+              border: `1px solid ${colors.border}`,
+              borderRadius: "12px",
+              padding: "16px"
+            }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, margin: "0 0 12px 0", color: colors.text }}>Cost Breakdown</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie
@@ -310,16 +442,34 @@ const AnalyticsPage: React.FC = () => {
           </div>
 
           {/* Top Costliest Vehicles */}
-          <div style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.border}`, borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: 600, margin: "0 0 12px 0" }}>Top Costliest Vehicles</h3>
+          <div className="vehicle-card" style={{
+            backgroundColor: isDark ? "#374151" : "#f8fafc",
+            border: `1px solid ${colors.border}`,
+            borderRadius: "12px",
+            padding: "16px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
+          }}>
+            <h3 style={{ fontSize: "16px", fontWeight: 600, margin: "0 0 12px 0", color: colors.text }}>Top Costliest Vehicles</h3>
             <div style={{ display: "flex", justifyContent: "space-around", flexWrap: "wrap", gap: "16px" }}>
               {topVehicles.map((v) => (
                 <div key={v.name} style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "20px", fontWeight: 600 }}>{v.name}</div>
+                  <div style={{ fontSize: "20px", fontWeight: 600, color: '#000000' }}>{v.name}</div>
                   <div style={{ fontSize: "16px", color: colors.textMuted }}>{formatCurrency(v.cost)}</div>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{
+            marginTop: "24px",
+            borderTop: `1px solid ${colors.border}`,
+            paddingTop: "16px",
+            textAlign: "center",
+            fontSize: "12px",
+            color: colors.textMuted
+          }}>
+            Source: TransitOps Analytics
           </div>
         </div>
       ) : null}
