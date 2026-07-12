@@ -83,6 +83,8 @@ async def init_db() -> None:
     # Import models here to register them with the Base metadata before table creation
     from app.models import (  # noqa: F401
         User,
+        Role,
+        UserRoleAssociation,
         Vehicle,
         Driver,
         Trip,
@@ -96,10 +98,25 @@ async def init_db() -> None:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables initialized successfully.")
 
-    # Seed initial superuser if not exists
-    from app.core.security import hash_password
+    # Seed initial roles if they do not exist
+    from app.models.role import Role
     from app.models.user import UserRole
     from sqlalchemy import select
+
+    logger.info("Checking and seeding system roles...")
+    async with async_session_maker() as session:
+        for r_enum in UserRole:
+            query = select(Role).where(Role.name == r_enum.value)
+            result = await session.execute(query)
+            role_obj = result.scalar_one_or_none()
+            if not role_obj:
+                logger.info(f"Seeding role: {r_enum.value}")
+                new_role = Role(name=r_enum.value, description=f"System role for {r_enum.value}")
+                session.add(new_role)
+        await session.commit()
+
+    # Seed initial superuser if not exists
+    from app.core.security import hash_password
 
     logger.info("Checking if initial superuser exists...")
     async with async_session_maker() as session:
@@ -109,12 +126,17 @@ async def init_db() -> None:
 
         if not user:
             logger.info("Seeding initial superuser...")
+            # Retrieve the ADMIN role
+            role_query = select(Role).where(Role.name == UserRole.ADMIN.value)
+            role_result = await session.execute(role_query)
+            admin_role = role_result.scalar_one()
+
             hashed_pwd = hash_password(settings.FIRST_SUPERUSER_PASSWORD)
             superuser = User(
                 email=settings.FIRST_SUPERUSER_EMAIL.lower().strip(),
                 hashed_password=hashed_pwd,
                 full_name="System Administrator",
-                role=UserRole.ADMIN,
+                roles=[admin_role],
                 is_active=True,
                 is_superuser=True,
                 is_verified=True,
@@ -124,4 +146,5 @@ async def init_db() -> None:
             logger.info(f"Initial superuser seeded successfully: {settings.FIRST_SUPERUSER_EMAIL}")
         else:
             logger.info("Superuser already exists in the database.")
+
 
