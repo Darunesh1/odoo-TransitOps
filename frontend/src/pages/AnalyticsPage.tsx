@@ -146,24 +146,38 @@ const AnalyticsPage: React.FC = () => {
       timestampRef.current.textContent = formatted;
     }
 
-    // Temporarily force white background + dark text for the PDF capture
     const pdfElement = pdfRef.current;
-    const originalBg = pdfElement.style.backgroundColor;
-    const originalColor = pdfElement.style.color;
-    const originalBorderColor = pdfElement.style.borderColor;
+    
+    // Store original styles for restoration
+    const originalStyles = {
+      backgroundColor: pdfElement.style.backgroundColor,
+      color: pdfElement.style.color,
+      borderColor: pdfElement.style.borderColor,
+      boxShadow: pdfElement.style.boxShadow,
+      padding: pdfElement.style.padding,
+    };
 
-    // Apply PDF‑friendly styles (white bg, dark text, light borders)
+    // Force clean white background for PDF - this overrides the theme only for export
     pdfElement.style.backgroundColor = '#ffffff';
     pdfElement.style.color = '#0f172a';
     pdfElement.style.borderColor = '#e2e8f0';
+    pdfElement.style.boxShadow = 'none';
+    pdfElement.style.padding = '32px';
 
-    // Also force inner cards to white background for a clean look
+    // Apply PDF-friendly styles to all child elements
     const cards = pdfElement.querySelectorAll('.kpi-card, .chart-card, .vehicle-card');
     cards.forEach((card: any) => {
       card.style.backgroundColor = '#f8fafc';
       card.style.borderColor = '#e2e8f0';
       card.style.color = '#0f172a';
+      card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
     });
+
+    // Fix the header for PDF
+    const header = pdfElement.querySelector('[style*="borderBottom"]');
+    if (header) {
+      (header as HTMLElement).style.borderBottomColor = '#2563eb';
+    }
 
     try {
       const canvas = await html2canvas(pdfElement, {
@@ -178,21 +192,32 @@ const AnalyticsPage: React.FC = () => {
       const pdf = new jsPDF("p", "mm", "a4");
       const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Add the image to PDF
       pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
       pdf.save("transitops_analytics_report.pdf");
     } catch (err) {
+      console.error("PDF export failed:", err);
       alert("PDF export failed");
     } finally {
       // Restore original themed styles
-      pdfElement.style.backgroundColor = originalBg;
-      pdfElement.style.color = originalColor;
-      pdfElement.style.borderColor = originalBorderColor;
+      pdfElement.style.backgroundColor = originalStyles.backgroundColor || '';
+      pdfElement.style.color = originalStyles.color || '';
+      pdfElement.style.borderColor = originalStyles.borderColor || '';
+      pdfElement.style.boxShadow = originalStyles.boxShadow || '';
+      pdfElement.style.padding = originalStyles.padding || '32px';
 
       cards.forEach((card: any) => {
         card.style.backgroundColor = '';
         card.style.borderColor = '';
         card.style.color = '';
+        card.style.boxShadow = '';
       });
+
+      // Restore header
+      if (header) {
+        (header as HTMLElement).style.borderBottomColor = '';
+      }
     }
   };
 
@@ -334,7 +359,7 @@ const AnalyticsPage: React.FC = () => {
               fontSize: "24px",
               fontWeight: 700,
               margin: 0,
-              color: colors.text,
+              color: '#000000',
               letterSpacing: "-0.02em"
             }}>
               TransitOps Analytics Report
@@ -431,7 +456,7 @@ const AnalyticsPage: React.FC = () => {
             <div style={{ display: "flex", justifyContent: "space-around", flexWrap: "wrap", gap: "16px" }}>
               {topVehicles.map((v) => (
                 <div key={v.name} style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "20px", fontWeight: 600, color: colors.text }}>{v.name}</div>
+                  <div style={{ fontSize: "20px", fontWeight: 600, color: '#000000' }}>{v.name}</div>
                   <div style={{ fontSize: "16px", color: colors.textMuted }}>{formatCurrency(v.cost)}</div>
                 </div>
               ))}
