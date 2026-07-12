@@ -16,10 +16,12 @@ import {
   Menu,
   ChevronLeft,
   ChevronRight,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 const Sidebar = () => {
-  const { accessToken, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => {
@@ -80,6 +82,13 @@ const Sidebar = () => {
   const toggleCollapse = () => setCollapsed(!collapsed);
   const toggleMobile = () => setIsMobileOpen(!isMobileOpen);
 
+  const toggleTheme = () => {
+    const newTheme = isDark ? "light" : "dark";
+    setTheme(newTheme);
+    localStorage.setItem("theme", newTheme);
+    window.dispatchEvent(new Event("themeChanged"));
+  };
+
   const navItems = [
     { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { path: "/fleet", icon: Truck, label: "Fleet" },
@@ -92,18 +101,15 @@ const Sidebar = () => {
     { path: "/notifications", icon: Bell, label: "Notifications" },
   ];
 
-  const bottomItems = [
-    { path: "/settings", icon: Settings, label: "Settings" },
-  ];
+  const bottomItems = [{ path: "/settings", icon: Settings, label: "Settings" }];
 
-  // 🎨 IMPROVED COLORS (Light: soft slate, Dark: deep gray)
   const colors = {
-    background: isDark ? "#111827" : "#F8FAFC",        // soft off-white
-    border: isDark ? "#374151" : "#E2E8F0",            // softer border
-    text: isDark ? "#F9FAFB" : "#0F172A",              // dark slate
-    textMuted: isDark ? "#9CA3AF" : "#64748B",          // muted slate
-    hover: isDark ? "#1F2937" : "#EEF4FF",              // subtle blue tint
-    active: isDark ? "#2563EB33" : "#DBEAFE",           // blue active background
+    background: isDark ? "#111827" : "#F8FAFC",
+    border: isDark ? "#374151" : "#E2E8F0",
+    text: isDark ? "#F9FAFB" : "#0F172A",
+    textMuted: isDark ? "#9CA3AF" : "#64748B",
+    hover: isDark ? "#1F2937" : "#EEF4FF",
+    active: isDark ? "#2563EB33" : "#DBEAFE",
     activeBorder: "#2563EB",
     hoverText: isDark ? "#F9FAFB" : "#0F172A",
   };
@@ -148,7 +154,8 @@ const Sidebar = () => {
         borderRight: `1px solid ${colors.border}`,
         display: "flex",
         flexDirection: "column",
-        transition: "width 0.3s ease, background-color 0.3s ease, border-color 0.3s ease",
+        transition:
+          "width 0.3s ease, background-color 0.3s ease, border-color 0.3s ease",
         position: "sticky",
         top: 0,
         overflow: "hidden",
@@ -156,7 +163,7 @@ const Sidebar = () => {
         boxShadow: isDark ? "none" : "0 1px 12px rgba(15,23,42,0.06)",
       }}
     >
-      {/* Logo Section – without blue box, with distinct brand font */}
+      {/* Logo */}
       <div
         style={{
           display: "flex",
@@ -181,10 +188,9 @@ const Sidebar = () => {
             flex: collapsed ? "0" : "1",
           }}
         >
-          {/* Emoji only – no blue background */}
           <span
             style={{
-              fontSize: "28px",          // larger emoji
+              fontSize: "28px",
               lineHeight: 1,
               flexShrink: 0,
             }}
@@ -194,12 +200,12 @@ const Sidebar = () => {
           {!collapsed && (
             <span
               style={{
-                fontFamily: "'Inter', 'Segoe UI', sans-serif",  // distinct font
-                fontWeight: 700,            // bold
-                fontSize: "1.25rem",        // larger than nav items
+                fontFamily: "'Inter', 'Segoe UI', sans-serif",
+                fontWeight: 700,
+                fontSize: "1.25rem",
                 letterSpacing: "-0.02em",
                 color: isDark ? "#F9FAFB" : "#0F172A",
-                background: "linear-gradient(135deg, #2563EB, #3B82F6)", // optional gradient text
+                background: "linear-gradient(135deg, #2563EB, #3B82F6)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -267,7 +273,7 @@ const Sidebar = () => {
         )}
       </div>
 
-      {/* Navigation – unchanged */}
+      {/* Navigation */}
       <nav
         style={{
           flex: 1,
@@ -302,6 +308,7 @@ const Sidebar = () => {
               {!collapsed && <span>{item.label}</span>}
               {collapsed && (
                 <span
+                  className="tooltip"
                   style={{
                     position: "absolute",
                     left: "70px",
@@ -318,7 +325,6 @@ const Sidebar = () => {
                     border: `1px solid ${colors.border}`,
                     zIndex: 999,
                   }}
-                  className="tooltip"
                 >
                   {item.label}
                 </span>
@@ -328,7 +334,7 @@ const Sidebar = () => {
         })}
       </nav>
 
-      {/* Bottom Section – unchanged */}
+      {/* Bottom Section */}
       <div
         style={{
           borderTop: `1px solid ${colors.border}`,
@@ -336,6 +342,7 @@ const Sidebar = () => {
           transition: "border-color 0.3s ease",
         }}
       >
+        {/* Settings link */}
         {bottomItems.map((item) => (
           <Link
             key={item.path}
@@ -358,6 +365,7 @@ const Sidebar = () => {
             {!collapsed && <span>{item.label}</span>}
             {collapsed && (
               <span
+                className="tooltip"
                 style={{
                   position: "absolute",
                   left: "70px",
@@ -374,13 +382,64 @@ const Sidebar = () => {
                   border: `1px solid ${colors.border}`,
                   zIndex: 999,
                 }}
-                className="tooltip"
               >
                 {item.label}
               </span>
             )}
           </Link>
         ))}
+
+        {/* ✨ Theme Toggle as a menu item */}
+        <button
+          onClick={toggleTheme}
+          style={{
+            ...linkStyle(false),
+            border: "none",
+            background: "transparent",
+            width: "100%",
+            font: "inherit",
+            cursor: "pointer",
+            justifyContent: collapsed ? "center" : "flex-start",
+            margin: "4px 12px",
+            padding: "11px 14px",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = colors.hover;
+            e.currentTarget.style.color = colors.hoverText;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent";
+            e.currentTarget.style.color = colors.textMuted;
+          }}
+        >
+          {isDark ? <Sun size={20} style={iconStyle} /> : <Moon size={20} style={iconStyle} />}
+          {!collapsed && <span>Theme</span>}
+          {collapsed && (
+            <span
+              className="tooltip"
+              style={{
+                position: "absolute",
+                left: "70px",
+                backgroundColor: colors.background,
+                padding: "4px 8px",
+                borderRadius: "4px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                fontSize: "0.8rem",
+                color: colors.text,
+                whiteSpace: "nowrap",
+                opacity: 0,
+                pointerEvents: "none",
+                transition: "opacity 0.2s",
+                border: `1px solid ${colors.border}`,
+                zIndex: 999,
+              }}
+            >
+              Theme
+            </span>
+          )}
+        </button>
+
+        {/* Logout button */}
         <button
           onClick={handleLogout}
           style={{
@@ -407,6 +466,7 @@ const Sidebar = () => {
           {!collapsed && <span>Logout</span>}
           {collapsed && (
             <span
+              className="tooltip"
               style={{
                 position: "absolute",
                 left: "70px",
@@ -423,7 +483,6 @@ const Sidebar = () => {
                 border: `1px solid ${colors.border}`,
                 zIndex: 999,
               }}
-              className="tooltip"
             >
               Logout
             </span>
@@ -450,7 +509,7 @@ const Sidebar = () => {
     </div>
   );
 
-  // Mobile and desktop wrappers – unchanged
+  // Mobile & Desktop wrappers (unchanged)
   const mobileDrawer = (
     <>
       {isMobileOpen && (
