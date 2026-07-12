@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 import enum
 from typing import Optional, List
 import uuid
-from sqlalchemy import Boolean, DateTime, String, Enum as SQLEnum
+from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -42,10 +42,6 @@ class User(Base):
         String(255),
         nullable=False,
     )
-    role: Mapped[UserRole] = mapped_column(
-        SQLEnum(UserRole, name="user_role"),
-        nullable=False,
-    )
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
@@ -74,6 +70,12 @@ class User(Base):
     )
 
     # Relationships
+    roles: Mapped[List["Role"]] = relationship(
+        "Role",
+        secondary="user_roles",
+        back_populates="users",
+        lazy="selectin",
+    )
     trips: Mapped[List["Trip"]] = relationship(
         "Trip", back_populates="creator", cascade="all, delete-orphan"
     )
@@ -86,4 +88,5 @@ class User(Base):
     expenses: Mapped[List["Expense"]] = relationship(
         "Expense", back_populates="creator", cascade="all, delete-orphan"
     )
+
 
