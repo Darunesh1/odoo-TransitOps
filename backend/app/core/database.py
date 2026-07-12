@@ -81,9 +81,47 @@ async def init_db() -> None:
         await create_database_if_not_exists()
 
     # Import models here to register them with the Base metadata before table creation
-    from app.models.user import User  # noqa: F401
+    from app.models import (  # noqa: F401
+        User,
+        Vehicle,
+        Driver,
+        Trip,
+        MaintenanceLog,
+        FuelLog,
+        Expense,
+    )
 
     logger.info("Initializing database tables...")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables initialized successfully.")
+
+    # Seed initial superuser if not exists
+    from app.core.security import hash_password
+    from app.models.user import UserRole
+    from sqlalchemy import select
+
+    logger.info("Checking if initial superuser exists...")
+    async with async_session_maker() as session:
+        query = select(User).where(User.email == settings.FIRST_SUPERUSER_EMAIL.lower().strip())
+        result = await session.execute(query)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            logger.info("Seeding initial superuser...")
+            hashed_pwd = hash_password(settings.FIRST_SUPERUSER_PASSWORD)
+            superuser = User(
+                email=settings.FIRST_SUPERUSER_EMAIL.lower().strip(),
+                hashed_password=hashed_pwd,
+                full_name="System Administrator",
+                role=UserRole.ADMIN,
+                is_active=True,
+                is_superuser=True,
+                is_verified=True,
+            )
+            session.add(superuser)
+            await session.commit()
+            logger.info(f"Initial superuser seeded successfully: {settings.FIRST_SUPERUSER_EMAIL}")
+        else:
+            logger.info("Superuser already exists in the database.")
+
