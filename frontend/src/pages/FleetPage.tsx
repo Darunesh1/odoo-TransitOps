@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { vehicleService } from "../services/vehicleService";
 import { Vehicle, VehicleCreate, VehicleStatus } from "../types/vehicle";
+import { getErrorMessage } from "../utils/errors";
 
 const FleetPage: React.FC = () => {
   // ─── Theme ──────────────────────────────────────────────
@@ -28,14 +29,15 @@ const FleetPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
-  const [formData, setFormData] = useState<VehicleCreate>({
+  const [formData, setFormData] = useState<VehicleCreate & { odometer: number; region: string; status: VehicleStatus }>({
     registration_number: "",
     name: "",
     model: "",
-    type: "",
-    capacity: "",
-    domestic: 0,
+    vehicle_type: "",
+    max_load_capacity: 0,
+    odometer: 0,
     acquisition_cost: 0,
+    region: "",
     status: VehicleStatus.AVAILABLE,
   });
 
@@ -75,7 +77,7 @@ const FleetPage: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       [name]:
-        name === "domestic" || name === "acquisition_cost" ? Number(value) : value,
+        name === "max_load_capacity" || name === "odometer" || name === "acquisition_cost" ? Number(value) : value,
     }));
   };
 
@@ -86,10 +88,11 @@ const FleetPage: React.FC = () => {
         registration_number: vehicle.registration_number,
         name: vehicle.name,
         model: vehicle.model || "",
-        type: vehicle.type,
-        capacity: vehicle.capacity,
-        domestic: vehicle.domestic || 0,
+        vehicle_type: vehicle.vehicle_type,
+        max_load_capacity: vehicle.max_load_capacity,
+        odometer: vehicle.odometer || 0,
         acquisition_cost: vehicle.acquisition_cost,
+        region: vehicle.region || "",
         status: vehicle.status,
       });
     } else {
@@ -98,10 +101,11 @@ const FleetPage: React.FC = () => {
         registration_number: "",
         name: "",
         model: "",
-        type: "",
-        capacity: "",
-        domestic: 0,
+        vehicle_type: "",
+        max_load_capacity: 0,
+        odometer: 0,
         acquisition_cost: 0,
+        region: "",
         status: VehicleStatus.AVAILABLE,
       });
     }
@@ -127,7 +131,7 @@ const FleetPage: React.FC = () => {
       }
       closeModal();
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Operation failed");
+      alert(getErrorMessage(err));
     }
   };
 
@@ -139,7 +143,7 @@ const FleetPage: React.FC = () => {
         prev.map((v) => (v.id === retired.id ? retired : v))
       );
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to retire vehicle");
+      alert(getErrorMessage(err));
     }
   };
 
@@ -282,10 +286,11 @@ const FleetPage: React.FC = () => {
           <thead>
             <tr>
               <th style={{ textAlign: "left", padding: "12px 16px", backgroundColor: isDark ? "#1f2937" : "#f8fafc", color: colors.textMuted, fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${colors.border}` }}>REG. NO. (UNIQUE)</th>
-              <th style={{ textAlign: "left", padding: "12px 16px", backgroundColor: isDark ? "#1f2937" : "#f8fafc", color: colors.textMuted, fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${colors.border}` }}>NAME/MODE</th>
+              <th style={{ textAlign: "left", padding: "12px 16px", backgroundColor: isDark ? "#1f2937" : "#f8fafc", color: colors.textMuted, fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${colors.border}` }}>NAME/MODEL</th>
               <th style={{ textAlign: "left", padding: "12px 16px", backgroundColor: isDark ? "#1f2937" : "#f8fafc", color: colors.textMuted, fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${colors.border}` }}>TYPE</th>
               <th style={{ textAlign: "left", padding: "12px 16px", backgroundColor: isDark ? "#1f2937" : "#f8fafc", color: colors.textMuted, fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${colors.border}` }}>CAPACITY</th>
-              <th style={{ textAlign: "left", padding: "12px 16px", backgroundColor: isDark ? "#1f2937" : "#f8fafc", color: colors.textMuted, fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${colors.border}` }}>ODOMETE</th>
+              <th style={{ textAlign: "left", padding: "12px 16px", backgroundColor: isDark ? "#1f2937" : "#f8fafc", color: colors.textMuted, fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${colors.border}` }}>ODOMETER</th>
+              <th style={{ textAlign: "left", padding: "12px 16px", backgroundColor: isDark ? "#1f2937" : "#f8fafc", color: colors.textMuted, fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${colors.border}` }}>REGION</th>
               <th style={{ textAlign: "left", padding: "12px 16px", backgroundColor: isDark ? "#1f2937" : "#f8fafc", color: colors.textMuted, fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${colors.border}` }}>ACQ. COST</th>
               <th style={{ textAlign: "left", padding: "12px 16px", backgroundColor: isDark ? "#1f2937" : "#f8fafc", color: colors.textMuted, fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${colors.border}` }}>STATUS</th>
               <th style={{ textAlign: "left", padding: "12px 16px", backgroundColor: isDark ? "#1f2937" : "#f8fafc", color: colors.textMuted, fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${colors.border}` }}>ACTIONS</th>
@@ -294,11 +299,11 @@ const FleetPage: React.FC = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} style={{ padding: "32px", textAlign: "center", color: colors.textMuted }}>Loading...</td>
+                <td colSpan={9} style={{ padding: "32px", textAlign: "center", color: colors.textMuted }}>Loading...</td>
               </tr>
             ) : vehicles.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ padding: "32px", textAlign: "center", color: colors.textMuted }}>No vehicles found.</td>
+                <td colSpan={9} style={{ padding: "32px", textAlign: "center", color: colors.textMuted }}>No vehicles found.</td>
               </tr>
             ) : (
               vehicles.map((vehicle) => (
@@ -307,11 +312,10 @@ const FleetPage: React.FC = () => {
                   <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>
                     {vehicle.name} {vehicle.model ? `(${vehicle.model})` : ""}
                   </td>
-                  <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>{vehicle.type}</td>
-                  <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>{vehicle.capacity}</td>
-                  <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>
-                    {vehicle.domestic?.toLocaleString() || "-"}
-                  </td>
+                  <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>{vehicle.vehicle_type}</td>
+                  <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>{vehicle.max_load_capacity} kg</td>
+                  <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>{vehicle.odometer} km</td>
+                  <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>{vehicle.region || "-"}</td>
                   <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>{formatCurrency(vehicle.acquisition_cost)}</td>
                   <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>
                     <span style={{ padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 500, display: "inline-block", backgroundColor: getStatusColor(vehicle.status) + "20", color: getStatusColor(vehicle.status) }}>
@@ -360,18 +364,22 @@ const FleetPage: React.FC = () => {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <label style={{ fontSize: "14px", fontWeight: 500 }}>Type *</label>
-                <input type="text" name="type" value={formData.type} onChange={handleFormChange} required style={{ padding: "10px 12px", border: `1px solid ${colors.inputBorder}`, borderRadius: "8px", fontSize: "14px", backgroundColor: colors.inputBg, color: colors.text, outline: "none", transition: "border-color 0.2s" }} />
+                <input type="text" name="vehicle_type" value={formData.vehicle_type} onChange={handleFormChange} required style={{ padding: "10px 12px", border: `1px solid ${colors.inputBorder}`, borderRadius: "8px", fontSize: "14px", backgroundColor: colors.inputBg, color: colors.text, outline: "none", transition: "border-color 0.2s" }} />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={{ fontSize: "14px", fontWeight: 500 }}>Capacity *</label>
-                <input type="text" name="capacity" value={formData.capacity} onChange={handleFormChange} required style={{ padding: "10px 12px", border: `1px solid ${colors.inputBorder}`, borderRadius: "8px", fontSize: "14px", backgroundColor: colors.inputBg, color: colors.text, outline: "none", transition: "border-color 0.2s" }} />
+                <label style={{ fontSize: "14px", fontWeight: 500 }}>Capacity (kg) *</label>
+                <input type="number" name="max_load_capacity" value={formData.max_load_capacity} onChange={handleFormChange} required style={{ padding: "10px 12px", border: `1px solid ${colors.inputBorder}`, borderRadius: "8px", fontSize: "14px", backgroundColor: colors.inputBg, color: colors.text, outline: "none", transition: "border-color 0.2s" }} />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={{ fontSize: "14px", fontWeight: 500 }}>Odometer (km)</label>
-                <input type="number" name="domestic" value={formData.domestic} onChange={handleFormChange} style={{ padding: "10px 12px", border: `1px solid ${colors.inputBorder}`, borderRadius: "8px", fontSize: "14px", backgroundColor: colors.inputBg, color: colors.text, outline: "none", transition: "border-color 0.2s" }} />
+                <label style={{ fontSize: "14px", fontWeight: 500 }}>Odometer (km) *</label>
+                <input type="number" name="odometer" value={formData.odometer} onChange={handleFormChange} required style={{ padding: "10px 12px", border: `1px solid ${colors.inputBorder}`, borderRadius: "8px", fontSize: "14px", backgroundColor: colors.inputBg, color: colors.text, outline: "none", transition: "border-color 0.2s" }} />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <label style={{ fontSize: "14px", fontWeight: 500 }}>Acquisition Cost *</label>
+                <label style={{ fontSize: "14px", fontWeight: 500 }}>Region</label>
+                <input type="text" name="region" value={formData.region} onChange={handleFormChange} style={{ padding: "10px 12px", border: `1px solid ${colors.inputBorder}`, borderRadius: "8px", fontSize: "14px", backgroundColor: colors.inputBg, color: colors.text, outline: "none", transition: "border-color 0.2s" }} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <label style={{ fontSize: "14px", fontWeight: 500 }}>Acquisition Cost (INR) *</label>
                 <input type="number" name="acquisition_cost" value={formData.acquisition_cost} onChange={handleFormChange} required style={{ padding: "10px 12px", border: `1px solid ${colors.inputBorder}`, borderRadius: "8px", fontSize: "14px", backgroundColor: colors.inputBg, color: colors.text, outline: "none", transition: "border-color 0.2s" }} />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>

@@ -5,6 +5,7 @@ import { driverService } from "../services/driverService";
 import { Trip, TripCreate, TripStatus, TripCompleteInput } from "../types/trip";
 import { Vehicle } from "../types/vehicle";
 import { Driver, DriverStatus } from "../types/driver";
+import { getErrorMessage } from "../utils/errors";
 
 const TripDispatcherPage: React.FC = () => {
   // ─── Theme ──────────────────────────────────────────────
@@ -165,7 +166,7 @@ const TripDispatcherPage: React.FC = () => {
       setSelectedVehicle(null);
       setCapacityError(null);
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to create trip");
+      alert(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -177,7 +178,7 @@ const TripDispatcherPage: React.FC = () => {
       const updated = await tripService.dispatchTrip(id);
       setTrips((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to dispatch trip");
+      alert(getErrorMessage(err));
     }
   };
 
@@ -190,7 +191,7 @@ const TripDispatcherPage: React.FC = () => {
       setCompletingTripId(null);
       setCompleteData({ final_odometer: 0, fuel_consumed: 0 });
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to complete trip");
+      alert(getErrorMessage(err));
     }
   };
 
@@ -201,7 +202,7 @@ const TripDispatcherPage: React.FC = () => {
       const updated = await tripService.cancelTrip(id);
       setTrips((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to cancel trip");
+      alert(getErrorMessage(err));
     }
   };
 
