@@ -1,73 +1,49 @@
-import axios from 'axios';
-import { Maintenance, MaintenanceCreate, MaintenanceUpdate, MaintenanceStatus } from '../types/maintenance';
+import api from "../api/axiosInstance";
+import {
+  MaintenanceCreateInput,
+  MaintenanceFilters,
+  MaintenanceRecord,
+  MaintenanceUpdateInput,
+} from "../types/maintenance";
 
-const API_BASE = (import.meta as any).VITE_API_BASE || 'http://localhost:8000';
+const normalizeParams = (params?: MaintenanceFilters) => {
+  if (!params) return undefined;
 
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return { Authorization: `Bearer ${token}` };
+  return Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== undefined && value !== "")
+  );
 };
 
 export const maintenanceService = {
-  // GET /maintenance/
-  getMaintenanceLogs: async (params?: {
-    vehicle_id?: string;
-    status?: MaintenanceStatus | string;
-    maintenance_type?: string;
-    start_date?: string;
-    end_date?: string;
-    search?: string;
-    skip?: number;
-    limit?: number;
-  }) => {
-    const response = await axios.get<Maintenance[]>(`${API_BASE}/maintenance/`, {
-      headers: getAuthHeader(),
-      params,
+  getMaintenanceLogs: async (params?: MaintenanceFilters) => {
+    const response = await api.get<MaintenanceRecord[]>("/maintenance/", {
+      params: normalizeParams(params),
     });
     return response.data;
   },
 
-  // GET /maintenance/{id}
   getMaintenanceLog: async (id: string) => {
-    const response = await axios.get<Maintenance>(`${API_BASE}/maintenance/${id}`, {
-      headers: getAuthHeader(),
-    });
+    const response = await api.get<MaintenanceRecord>(`/maintenance/${id}`);
     return response.data;
   },
 
-  // POST /maintenance/
-  createMaintenanceLog: async (data: MaintenanceCreate) => {
-    const response = await axios.post<Maintenance>(`${API_BASE}/maintenance/`, data, {
-      headers: getAuthHeader(),
-    });
+  createMaintenanceLog: async (data: MaintenanceCreateInput) => {
+    const response = await api.post<MaintenanceRecord>("/maintenance/", data);
     return response.data;
   },
 
-  // PATCH /maintenance/{id}
-  updateMaintenanceLog: async (id: string, data: MaintenanceUpdate) => {
-    const response = await axios.patch<Maintenance>(`${API_BASE}/maintenance/${id}`, data, {
-      headers: getAuthHeader(),
-    });
+  updateMaintenanceLog: async (id: string, data: MaintenanceUpdateInput) => {
+    const response = await api.patch<MaintenanceRecord>(`/maintenance/${id}`, data);
     return response.data;
   },
 
-  // POST /maintenance/{id}/complete
   completeMaintenanceLog: async (id: string) => {
-    const response = await axios.post<Maintenance>(
-      `${API_BASE}/maintenance/${id}/complete`,
-      {},
-      { headers: getAuthHeader() }
-    );
+    const response = await api.post<MaintenanceRecord>(`/maintenance/${id}/complete`, {});
     return response.data;
   },
 
-  // POST /maintenance/{id}/cancel
   cancelMaintenanceLog: async (id: string) => {
-    const response = await axios.post<Maintenance>(
-      `${API_BASE}/maintenance/${id}/cancel`,
-      {},
-      { headers: getAuthHeader() }
-    );
+    const response = await api.post<MaintenanceRecord>(`/maintenance/${id}/cancel`, {});
     return response.data;
   },
 };
