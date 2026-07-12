@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { driverService } from "../services/driverService";
 import { Driver, DriverCreate, DriverStatus } from "../types/driver";
 import { getErrorMessage } from "../utils/errors";
@@ -49,7 +49,6 @@ const DriversPage: React.FC = () => {
       const params: any = {};
       if (statusFilter) params.status = statusFilter;
       if (categoryFilter) params.license_category = categoryFilter;
-      if (searchTerm) params.search = searchTerm;
       params.skip = 0;
       params.limit = 100;
 
@@ -92,7 +91,7 @@ const DriversPage: React.FC = () => {
 
   useEffect(() => {
     loadDrivers();
-  }, [statusFilter, categoryFilter, searchTerm]);
+  }, [statusFilter, categoryFilter]);
 
   const handleFormChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -206,6 +205,17 @@ const DriversPage: React.FC = () => {
   const isExpired = (dateStr: string) => {
     return new Date(dateStr) < new Date();
   };
+
+  const filteredDrivers = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return drivers;
+    return drivers.filter((driver) =>
+      driver.name.toLowerCase().includes(term) ||
+      driver.license_number.toLowerCase().includes(term) ||
+      driver.license_category.toLowerCase().includes(term) ||
+      driver.contact.toLowerCase().includes(term)
+    );
+  }, [drivers, searchTerm]);
 
   const colors = {
     bg: isDark ? "#111827" : "#f9fafb",
@@ -352,12 +362,12 @@ const DriversPage: React.FC = () => {
               <tr>
                 <td colSpan={9} style={{ padding: "32px", textAlign: "center", color: colors.textMuted }}>Loading...</td>
               </tr>
-            ) : drivers.length === 0 ? (
+            ) : filteredDrivers.length === 0 ? (
               <tr>
                 <td colSpan={9} style={{ padding: "32px", textAlign: "center", color: colors.textMuted }}>No drivers found.</td>
               </tr>
             ) : (
-              drivers.map((driver) => {
+              filteredDrivers.map((driver) => {
                 const expired = isExpired(driver.license_expiry);
                 return (
                   <tr key={driver.id}>

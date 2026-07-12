@@ -20,8 +20,6 @@ const Trips = () => <div style={{ padding: "2rem" }}>📍 Trips Page</div>;
 const Maintenance = () => <div style={{ padding: "2rem" }}>🔧 Maintenance Page</div>;
 const Fuel = () => <div style={{ padding: "2rem" }}>⛽ Fuel & Expenses Page</div>;
 const Analytics = () => <div style={{ padding: "2rem" }}>📊 Analytics Page</div>;
-const Documents = () => <div style={{ padding: "2rem" }}>📄 Documents Page</div>;
-const Notifications = () => <div style={{ padding: "2rem" }}>🔔 Notifications Page</div>;
 const Settings = () => <div style={{ padding: "2rem" }}>⚙️ Settings Page</div>;
 const Forbidden = () => <div style={{ padding: "2rem" }}>⛔ 403 Forbidden</div>;
 
@@ -137,26 +135,6 @@ function App() {
               <PrivateRoute>
                 <Layout>
                   <AnalyticsPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/documents"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <Documents />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/notifications"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <Notifications />
                 </Layout>
               </PrivateRoute>
             }
