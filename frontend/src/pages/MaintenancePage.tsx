@@ -135,22 +135,9 @@ const MaintenancePage: React.FC = () => {
       setLogs(enriched);
       setUsingMockData(false);
     } catch (err: any) {
-      console.error("Error loading maintenance logs, using mock data:", err);
-      // Use mock data as fallback
-      const mockVehicles = generateMockVehicles();
-      const mockLogs = generateMockLogs();
-
-      const vMap: Record<string, Vehicle> = {};
-      mockVehicles.forEach((v) => (vMap[v.id] = v));
-      setVehiclesMap(vMap);
-
-      const enriched = mockLogs.map((log) => ({
-        ...log,
-        vehicle: vMap[log.vehicle_id],
-      }));
-      setLogs(enriched);
-      setUsingMockData(true);
-      setError("⚠️ Backend unavailable – showing mock data");
+      console.error("Error loading maintenance logs:", err);
+      setError(err.response?.data?.detail || "Failed to load maintenance logs from API.");
+      setLogs([]);
     } finally {
       setLoading(false);
     }
@@ -519,13 +506,8 @@ const MaintenancePage: React.FC = () => {
 
       {/* Error banner */}
       {error && (
-        <div style={{ padding: "12px 16px", backgroundColor: usingMockData ? colors.errorBg : colors.errorBg, color: colors.errorText, borderRadius: "8px", marginBottom: "20px", fontSize: "14px" }}>
+        <div style={{ padding: "12px 16px", backgroundColor: colors.errorBg, color: colors.errorText, borderRadius: "8px", marginBottom: "20px", fontSize: "14px" }}>
           {error}
-          {usingMockData && (
-            <div style={{ fontSize: "12px", marginTop: "4px", opacity: 0.8 }}>
-              Mock data is shown because the backend is unreachable.
-            </div>
-          )}
         </div>
       )}
 

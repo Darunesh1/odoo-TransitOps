@@ -113,25 +113,10 @@ const FuelExpensesPage: React.FC = () => {
       setFuelLogs(fuelData);
       setExpenses(expenseData);
     } catch (err: any) {
-      console.error("Error loading data, using mock:", err);
-      // Use mock data
-      const mockVehicles = generateMockVehicles();
-      const mockTrips = generateMockTrips();
-      const mockFuel = generateMockFuelLogs();
-      const mockExp = generateMockExpenses();
-
-      const vMap: Record<string, Vehicle> = {};
-      mockVehicles.forEach((v) => (vMap[v.id] = v));
-      setVehiclesMap(vMap);
-
-      const tMap: Record<string, Trip> = {};
-      mockTrips.forEach((t) => (tMap[t.id] = t));
-      setTripsMap(tMap);
-
-      setFuelLogs(mockFuel);
-      setExpenses(mockExp);
-      setUsingMockData(true);
-      setError("⚠️ Backend unavailable – showing mock data");
+      console.error("Error loading data from API:", err);
+      setError(err.response?.data?.detail || "Failed to load fuel and expense data from API.");
+      setFuelLogs([]);
+      setExpenses([]);
     } finally {
       setLoading(false);
     }
@@ -414,15 +399,10 @@ const FuelExpensesPage: React.FC = () => {
         />
       </div>
 
-      {/* Error / Mock banner */}
+      {/* Error banner */}
       {error && (
-        <div style={{ padding: "12px 16px", backgroundColor: usingMockData ? colors.errorBg : colors.errorBg, color: colors.errorText, borderRadius: "8px", marginBottom: "20px", fontSize: "14px" }}>
+        <div style={{ padding: "12px 16px", backgroundColor: colors.errorBg, color: colors.errorText, borderRadius: "8px", marginBottom: "20px", fontSize: "14px" }}>
           {error}
-          {usingMockData && (
-            <div style={{ fontSize: "12px", marginTop: "4px", opacity: 0.8 }}>
-              Mock data is shown because the backend is unreachable.
-            </div>
-          )}
         </div>
       )}
 
