@@ -9,7 +9,6 @@ const Login = () => {
   // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("Fleet Manager"); // UI only
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -295,47 +294,6 @@ const Login = () => {
                 {showPassword ? "👁️" : "🔒"}
               </button>
             </div>
-          </div>
-
-          {/* Role (UI only) */}
-          <div style={{ marginBottom: "1rem" }}>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "0.5rem",
-                fontWeight: "500",
-                color: isDark ? "#e5e7eb" : "#374151",
-                fontSize: "0.9rem",
-              }}
-            >
-              ROLE (RBAC)
-            </label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "0.75rem",
-                border: "1px solid " + (isDark ? "#374151" : "#d1d5db"),
-                borderRadius: "8px",
-                backgroundColor: isDark ? "#374151" : "#f9fafb",
-                color: isDark ? "#f9fafb" : "#111827",
-                fontSize: "1rem",
-                outline: "none",
-                transition: "border-color 0.2s",
-                boxSizing: "border-box",
-                cursor: "pointer",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "#2563eb")}
-              onBlur={(e) =>
-                (e.target.style.borderColor = isDark ? "#374151" : "#d1d5db")
-              }
-            >
-              <option value="Fleet Manager">Fleet Manager</option>
-              <option value="Driver">Driver</option>
-              <option value="Safety Officer">Safety Officer</option>
-              <option value="Financial Analyst">Financial Analyst</option>
-            </select>
           </div>
 
           {/* Remember me & Forgot password */}
