@@ -35,29 +35,7 @@ def create_verification_token(user_id: str) -> str:
     )
 
 
-@router.post(
-    "/register", response_model=UserRead, status_code=status.HTTP_201_CREATED
-)
-async def register(
-    user_in: UserCreate, db: AsyncSession = Depends(get_db)
-) -> Any:
-    """Registers a new user and triggers email verification."""
-    user = await get_user_by_email(db, email=user_in.email)
-    if user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A user with this email already exists in the system.",
-        )
-
-    new_user = await create_user(db, obj_in=user_in)
-
-    # Generate verification token and trigger background Celery task
-    token = create_verification_token(str(new_user.id))
-    send_verification_email.delay(
-        email=new_user.email, token=token, full_name=new_user.full_name or ""
-    )
-
-    return new_user
+# Public registration is disabled. Users must be created by an administrator.
 
 
 @router.post("/login", response_model=Token)

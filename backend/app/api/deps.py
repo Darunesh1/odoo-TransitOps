@@ -8,8 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import decode_token
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.token import TokenPayload
+
 
 # OAuth2 scheme config (points to our relative login route path)
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -83,3 +84,18 @@ def get_current_active_superuser(
             detail="The user does not have enough privileges",
         )
     return current_user
+
+
+def require_roles(*roles: UserRole):
+    """FastAPI dependency factory to restrict endpoint access by roles."""
+    async def role_dependency(
+        current_user: User = Depends(get_current_user),
+    ) -> User:
+        if current_user.is_superuser or current_user.role in roles:
+            return current_user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user does not have enough privileges",
+        )
+    return role_dependency
+
