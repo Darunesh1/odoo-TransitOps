@@ -27,13 +27,21 @@ async def get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> Optional[User]
 async def create_user(db: AsyncSession, obj_in: UserCreate) -> User:
     """Hashes the password and creates a new User record in the database."""
     hashed_pwd = hash_password(obj_in.password)
+    
+    # Query database Role entities
+    from app.models.role import Role
+    role_names = [r.value for r in obj_in.roles]
+    role_query = select(Role).where(Role.name.in_(role_names))
+    role_result = await db.execute(role_query)
+    db_roles = role_result.scalars().all()
+
     db_user = User(
         email=obj_in.email.lower().strip(),
         hashed_password=hashed_pwd,
         full_name=obj_in.full_name,
-        role=obj_in.role,
+        roles=db_roles,
         is_active=True,
-        is_superuser=(obj_in.role == UserRole.ADMIN),
+        is_superuser="ADMIN" in [r.name for r in db_roles],
         is_verified=True,
     )
     try:
@@ -70,10 +78,15 @@ async def update_user(
         db_obj.email = update_data["email"].lower().strip()
         del update_data["email"]
 
-    if "role" in update_data and update_data["role"]:
-        db_obj.role = update_data["role"]
-        db_obj.is_superuser = (update_data["role"] == UserRole.ADMIN)
-        del update_data["role"]
+    if "roles" in update_data and update_data["roles"] is not None:
+        from app.models.role import Role
+        role_names = [r.value for r in update_data["roles"]]
+        role_query = select(Role).where(Role.name.in_(role_names))
+        role_result = await db.execute(role_query)
+        db_roles = role_result.scalars().all()
+        db_obj.roles = db_roles
+        db_obj.is_superuser = "ADMIN" in [r.name for r in db_roles]
+        del update_data["roles"]
 
     for field, value in update_data.items():
         setattr(db_obj, field, value)
@@ -95,4 +108,5 @@ async def update_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database error occurred during user update.",
         )
+
 

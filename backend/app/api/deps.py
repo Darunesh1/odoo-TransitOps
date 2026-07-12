@@ -78,7 +78,8 @@ def get_current_active_superuser(
     current_user: User = Depends(get_current_user),
 ) -> User:
     """FastAPI dependency to verify that the logged-in user is an admin."""
-    if current_user.role != UserRole.ADMIN:
+    user_roles = {role.name for role in current_user.roles}
+    if "ADMIN" not in user_roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient permissions",
@@ -93,10 +94,12 @@ def role_required(*allowed_roles: UserRole):
     async def role_dependency(
         current_user: User = Depends(get_current_user),
     ) -> User:
-        if (
-            current_user.role != UserRole.ADMIN
-            and current_user.role not in allowed_roles
-        ):
+        user_roles = {role.name for role in current_user.roles}
+        if "ADMIN" in user_roles:
+            return current_user
+
+        allowed_role_names = {r.value for r in allowed_roles}
+        if not user_roles.intersection(allowed_role_names):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions",
