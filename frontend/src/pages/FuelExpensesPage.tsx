@@ -7,8 +7,12 @@ import { FuelLog, FuelLogCreate } from "../types/fuelLog";
 import { Expense, ExpenseCreate } from "../types/expense";
 import { Vehicle, VehicleStatus } from "../types/vehicle";
 import { Trip, TripStatus } from "../types/trip";
+import { useAuth } from "../contexts/AuthContext";
 
 const FuelExpensesPage: React.FC = () => {
+  const { user } = useAuth();
+  const canEdit = !!user && (user.roles.includes("ADMIN") || user.roles.includes("FINANCIAL_ANALYST") || user.is_superuser);
+
   // ─── Theme ──────────────────────────────────────────────
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
 
@@ -366,14 +370,16 @@ const FuelExpensesPage: React.FC = () => {
       {/* Header */}
       <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
         <h1 style={{ fontSize: "28px", fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>Fuel & Expenses</h1>
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <button className="btn-primary" style={{ padding: "10px 20px", backgroundColor: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 500, cursor: "pointer", transition: "background-color 0.2s", boxShadow: "0 2px 6px rgba(37,99,235,0.25)" }} onClick={() => openModal("fuel")}>
-            + Log Fuel
-          </button>
-          <button className="btn-secondary" style={{ padding: "10px 20px", backgroundColor: isDark ? "#374151" : "#f1f5f9", border: `1px solid ${colors.border}`, borderRadius: "8px", fontSize: "14px", fontWeight: 500, cursor: "pointer", transition: "background-color 0.2s", color: colors.text }} onClick={() => openModal("expense")}>
-            + Add Expense
-          </button>
-        </div>
+        {canEdit && (
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <button className="btn-primary" style={{ padding: "10px 20px", backgroundColor: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 500, cursor: "pointer", transition: "background-color 0.2s", boxShadow: "0 2px 6px rgba(37,99,235,0.25)" }} onClick={() => openModal("fuel")}>
+              + Log Fuel
+            </button>
+            <button className="btn-secondary" style={{ padding: "10px 20px", backgroundColor: isDark ? "#374151" : "#f1f5f9", border: `1px solid ${colors.border}`, borderRadius: "8px", fontSize: "14px", fontWeight: 500, cursor: "pointer", transition: "background-color 0.2s", color: colors.text }} onClick={() => openModal("expense")}>
+              + Add Expense
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Search */}
@@ -436,8 +442,14 @@ const FuelExpensesPage: React.FC = () => {
                       <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>{log.liters} L</td>
                       <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>{formatCurrency(log.cost)}</td>
                       <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text, textAlign: "center" }}>
-                        <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", opacity: 0.7 }} onClick={() => openModal("fuel", log)} title="Edit">✏️</button>
-                        <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", opacity: 0.7, marginLeft: 6, color: "#ef4444" }} onClick={() => handleDelete(log.id, "fuel")} title="Delete">🗑️</button>
+                        {canEdit ? (
+                          <>
+                            <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", opacity: 0.7 }} onClick={() => openModal("fuel", log)} title="Edit">✏️</button>
+                            <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", opacity: 0.7, marginLeft: 6, color: "#ef4444" }} onClick={() => handleDelete(log.id, "fuel")} title="Delete">🗑️</button>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: "12px", color: colors.textMuted }}>Read-Only</span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -506,16 +518,20 @@ const FuelExpensesPage: React.FC = () => {
                       </td>
                       <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text, textAlign: "center" }}>
                         {/* Actions: delete all expenses for this trip? or allow edit/delete per expense? For simplicity, we show a delete button that deletes all expenses of this trip */}
-                        <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", opacity: 0.7, color: "#ef4444" }} onClick={() => {
-                          if (window.confirm(`Delete all expenses for trip ${tripDisplay}?`)) {
-                            group.expenses.forEach(async (e) => {
-                              await expenseService.deleteExpense(e.id);
-                            });
-                            // Refresh: filter out deleted expenses from state
-                            const ids = group.expenses.map(e => e.id);
-                            setExpenses(prev => prev.filter(e => !ids.includes(e.id)));
-                          }
-                        }} title="Delete all">🗑️</button>
+                        {canEdit ? (
+                          <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", opacity: 0.7, color: "#ef4444" }} onClick={() => {
+                            if (window.confirm(`Delete all expenses for trip ${tripDisplay}?`)) {
+                              group.expenses.forEach(async (e) => {
+                                await expenseService.deleteExpense(e.id);
+                              });
+                              // Refresh: filter out deleted expenses from state
+                              const ids = group.expenses.map(e => e.id);
+                              setExpenses(prev => prev.filter(e => !ids.includes(e.id)));
+                            }
+                          }} title="Delete all">🗑️</button>
+                        ) : (
+                          <span style={{ fontSize: "12px", color: colors.textMuted }}>Read-Only</span>
+                        )}
                       </td>
                     </tr>
                   );

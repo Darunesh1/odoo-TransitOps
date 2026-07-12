@@ -2,8 +2,12 @@ import React, { useEffect, useState } from "react";
 import { driverService } from "../services/driverService";
 import { Driver, DriverCreate, DriverStatus } from "../types/driver";
 import { getErrorMessage } from "../utils/errors";
+import { useAuth } from "../contexts/AuthContext";
 
 const DriversPage: React.FC = () => {
+  const { user } = useAuth();
+  const canEdit = !!user && (user.roles.includes("ADMIN") || user.roles.includes("SAFETY_OFFICER") || user.is_superuser);
+
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
 
   useEffect(() => {
@@ -246,9 +250,11 @@ const DriversPage: React.FC = () => {
       {/* Header */}
       <div className="drivers-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
         <h1 style={{ fontSize: "28px", fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>Safety Profiles</h1>
-        <button className="btn-primary" style={{ padding: "10px 20px", backgroundColor: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 500, cursor: "pointer", transition: "background-color 0.2s", boxShadow: "0 2px 6px rgba(37,99,235,0.25)" }} onClick={() => openModal()}>
-          + Add Driver
-        </button>
+        {canEdit && (
+          <button className="btn-primary" style={{ padding: "10px 20px", backgroundColor: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 500, cursor: "pointer", transition: "background-color 0.2s", boxShadow: "0 2px 6px rgba(37,99,235,0.25)" }} onClick={() => openModal()}>
+            + Add Driver
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -385,29 +391,35 @@ const DriversPage: React.FC = () => {
                       </span>
                     </td>
                     <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text, textAlign: "center" }}>
-                      <button
-                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", transition: "background-color 0.2s", opacity: 0.7 }}
-                        onClick={() => openModal(driver)}
-                        title="Edit"
-                      >
-                        ✏️
-                      </button>
-                      {driver.status !== DriverStatus.SUSPENDED ? (
-                        <button
-                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", transition: "background-color 0.2s", opacity: 0.7, marginLeft: 8, color: "#ef4444" }}
-                          onClick={() => handleSuspend(driver.id)}
-                          title="Suspend"
-                        >
-                          ⛔
-                        </button>
+                      {canEdit ? (
+                        <>
+                          <button
+                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", transition: "background-color 0.2s", opacity: 0.7 }}
+                            onClick={() => openModal(driver)}
+                            title="Edit"
+                          >
+                            ✏️
+                          </button>
+                          {driver.status !== DriverStatus.SUSPENDED ? (
+                            <button
+                              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", transition: "background-color 0.2s", opacity: 0.7, marginLeft: 8, color: "#ef4444" }}
+                              onClick={() => handleSuspend(driver.id)}
+                              title="Suspend"
+                            >
+                              ⛔
+                            </button>
+                          ) : (
+                            <button
+                              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", transition: "background-color 0.2s", opacity: 0.7, marginLeft: 8, color: "#10b981" }}
+                              onClick={() => handleActivate(driver.id)}
+                              title="Activate"
+                            >
+                              ✅
+                            </button>
+                          )}
+                        </>
                       ) : (
-                        <button
-                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", transition: "background-color 0.2s", opacity: 0.7, marginLeft: 8, color: "#10b981" }}
-                          onClick={() => handleActivate(driver.id)}
-                          title="Activate"
-                        >
-                          ✅
-                        </button>
+                        <span style={{ fontSize: "12px", color: colors.textMuted }}>Read-Only</span>
                       )}
                     </td>
                   </tr>

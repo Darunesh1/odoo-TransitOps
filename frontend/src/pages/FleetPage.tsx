@@ -2,8 +2,12 @@ import React, { useEffect, useState } from "react";
 import { vehicleService } from "../services/vehicleService";
 import { Vehicle, VehicleCreate, VehicleStatus } from "../types/vehicle";
 import { getErrorMessage } from "../utils/errors";
+import { useAuth } from "../contexts/AuthContext";
 
 const FleetPage: React.FC = () => {
+  const { user } = useAuth();
+  const canEdit = !!user && (user.roles.includes("ADMIN") || user.roles.includes("FLEET_MANAGER") || user.is_superuser);
+
   // ─── Theme ──────────────────────────────────────────────
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
 
@@ -216,9 +220,11 @@ const FleetPage: React.FC = () => {
       {/* Header */}
       <div className="fleet-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
         <h1 style={{ fontSize: "28px", fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>Vehicle Registry</h1>
-        <button className="btn-primary" style={{ padding: "10px 20px", backgroundColor: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 500, cursor: "pointer", transition: "background-color 0.2s", boxShadow: "0 2px 6px rgba(37,99,235,0.25)" }} onClick={() => openModal()}>
-          + Add Vehicle
-        </button>
+        {canEdit && (
+          <button className="btn-primary" style={{ padding: "10px 20px", backgroundColor: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 500, cursor: "pointer", transition: "background-color 0.2s", boxShadow: "0 2px 6px rgba(37,99,235,0.25)" }} onClick={() => openModal()}>
+            + Add Vehicle
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -323,9 +329,15 @@ const FleetPage: React.FC = () => {
                     </span>
                   </td>
                   <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text, textAlign: "right" }}>
-                    <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", transition: "background-color 0.2s", opacity: 0.7 }} onClick={() => openModal(vehicle)} title="Edit">✏️</button>
-                    {vehicle.status !== VehicleStatus.RETIRED && (
-                      <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", transition: "background-color 0.2s", opacity: 0.7, marginLeft: 8 }} onClick={() => handleRetire(vehicle.id)} title="Retire">🗑️</button>
+                    {canEdit ? (
+                      <>
+                        <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", transition: "background-color 0.2s", opacity: 0.7 }} onClick={() => openModal(vehicle)} title="Edit">✏️</button>
+                        {vehicle.status !== VehicleStatus.RETIRED && (
+                          <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", padding: "4px", borderRadius: "4px", transition: "background-color 0.2s", opacity: 0.7, marginLeft: 8 }} onClick={() => handleRetire(vehicle.id)} title="Retire">🗑️</button>
+                        )}
+                      </>
+                    ) : (
+                      <span style={{ fontSize: "12px", color: colors.textMuted }}>Read-Only</span>
                     )}
                   </td>
                 </tr>

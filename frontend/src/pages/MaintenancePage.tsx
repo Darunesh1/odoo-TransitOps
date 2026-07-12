@@ -4,8 +4,11 @@ import { vehicleService } from "../services/vehicleService";
 import { Maintenance, MaintenanceCreate, MaintenanceStatus } from "../types/maintenance";
 import { Vehicle, VehicleStatus } from "../types/vehicle";
 import { getErrorMessage } from "../utils/errors";
+import { useAuth } from "../contexts/AuthContext";
 
 const MaintenancePage: React.FC = () => {
+  const { user } = useAuth();
+  const userCanMutate = !!user && (user.roles.includes("ADMIN") || user.roles.includes("FLEET_MANAGER") || user.is_superuser);
   // ─── Theme ──────────────────────────────────────────────
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
 
@@ -318,9 +321,11 @@ const MaintenancePage: React.FC = () => {
       {/* Header */}
       <div className="maintenance-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
         <h1 style={{ fontSize: "28px", fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>Maintenance</h1>
-        <button className="btn-primary" style={{ padding: "10px 20px", backgroundColor: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 500, cursor: "pointer", transition: "background-color 0.2s", boxShadow: "0 2px 6px rgba(37,99,235,0.25)" }} onClick={() => openModal()}>
-          + New Maintenance
-        </button>
+        {userCanMutate && (
+          <button className="btn-primary" style={{ padding: "10px 20px", backgroundColor: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 500, cursor: "pointer", transition: "background-color 0.2s", boxShadow: "0 2px 6px rgba(37,99,235,0.25)" }} onClick={() => openModal()}>
+            + New Maintenance
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -544,9 +549,9 @@ const MaintenancePage: React.FC = () => {
                   : log.vehicle_id.slice(0, 8);
 
                 const isActive = log.status === MaintenanceStatus.ACTIVE;
-                const canComplete = isActive;
-                const canCancel = isActive;
-                const canEdit = isActive;
+                const canComplete = isActive && userCanMutate;
+                const canCancel = isActive && userCanMutate;
+                const canEdit = isActive && userCanMutate;
 
                 return (
                   <tr key={log.id}>
