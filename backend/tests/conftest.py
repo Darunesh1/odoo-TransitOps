@@ -26,22 +26,29 @@ app.core.database.async_session_maker = async_sessionmaker(
 )
 
 
+@pytest.fixture(autouse=True)
+async def setup_test_db() -> None:
+    """Creates database tables and seeds system roles before each test function to guarantee isolation."""
+    # Ensure tables are dropped and recreated
+    async with app.core.database.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
 
+    # Seed roles
+    from app.models.role import Role
+    from app.models.user import UserRole
+    async with app.core.database.async_session_maker() as session:
+        for r_enum in UserRole:
+            new_role = Role(name=r_enum.value, description=f"System role for {r_enum.value}")
+            session.add(new_role)
+        await session.commit()
 
 
 @pytest.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
-    """Yields a fresh AsyncSession and cleans up user records after each test."""
+    """Yields a fresh AsyncSession. setup_test_db handles cleanup/re-creation before each test."""
     async with app.core.database.async_session_maker() as session:
         yield session
-        # Teardown: delete all users created during the test
-        from sqlalchemy import delete
-        from app.models.user import User
-        try:
-            await session.execute(delete(User))
-            await session.commit()
-        except Exception:
-            await session.rollback()
 
 
 @pytest.fixture

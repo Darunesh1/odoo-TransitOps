@@ -2,12 +2,31 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
-from app.models.user import User
-from app.schemas.user import UserRead, UserUpdate
-from app.services import get_user_by_email, update_user
+from app.api.deps import get_current_active_superuser, get_current_user, get_db, role_required
+from app.models.user import User, UserRole
+from app.schemas.user import UserCreate, UserRead, UserUpdate
+from app.services import create_user, get_user_by_email, update_user
 
 router = APIRouter()
+
+
+
+@router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+async def create_new_user(
+    user_in: UserCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_superuser),
+) -> Any:
+    """Creates a new user. Accessible only to superusers."""
+    user = await get_user_by_email(db, email=user_in.email)
+    if user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A user with this email already exists in the system.",
+        )
+    new_user = await create_user(db, obj_in=user_in)
+    return new_user
+
 
 
 @router.get("/me", response_model=UserRead)
@@ -27,9 +46,27 @@ async def update_user_me(
         existing_user = await get_user_by_email(db, email=user_in.email)
         if existing_user and existing_user.id != current_user.id:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="A user with this email address already exists.",
             )
 
     updated = await update_user(db, db_obj=current_user, obj_in=user_in)
     return updated
+
+
+@router.get("/test-fleet-manager", response_model=UserRead)
+async def test_fleet_manager_route(
+    current_user: User = Depends(role_required(UserRole.FLEET_MANAGER)),
+) -> Any:
+    """Testing endpoint requiring FLEET_MANAGER role."""
+    return current_user
+
+
+@router.get("/test-safety-officer", response_model=UserRead)
+async def test_safety_officer_route(
+    current_user: User = Depends(role_required(UserRole.SAFETY_OFFICER)),
+) -> Any:
+    """Testing endpoint requiring SAFETY_OFFICER role."""
+    return current_user
+
+

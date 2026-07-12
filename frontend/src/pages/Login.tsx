@@ -5,40 +5,146 @@ import { useAuth } from "../contexts/AuthContext";
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "light";
+
+  // Theme
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
+
+  // Account locking (5 attempts → 2 min lock)
+  const [failedAttempts, setFailedAttempts] = useState<number>(() => {
+    const stored = localStorage.getItem("loginFailedAttempts");
+    return stored ? parseInt(stored, 10) : 0;
+  });
+  const [lockUntil, setLockUntil] = useState<number | null>(() => {
+    const stored = localStorage.getItem("loginLockUntil");
+    return stored ? parseInt(stored, 10) : null;
   });
 
+  // Timer state (seconds remaining)
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    if (!lockUntil) return 0;
+    const remaining = Math.floor((lockUntil - Date.now()) / 1000);
+    return remaining > 0 ? remaining : 0;
+  });
+
+  // Check if locked
+  const isLocked = lockUntil !== null && Date.now() < lockUntil;
+
+  // --- Timer effect ---
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    if (isLocked) {
+      // Update every second
+      interval = setInterval(() => {
+        const now = Date.now();
+        const remaining = Math.floor((lockUntil! - now) / 1000);
+        if (remaining <= 0) {
+          // Lock expired – clear it
+          clearInterval(interval!);
+          setLockUntil(null);
+          localStorage.removeItem("loginLockUntil");
+          setFailedAttempts(0);
+          localStorage.setItem("loginFailedAttempts", "0");
+          setTimeLeft(0);
+          setError("");
+        } else {
+          setTimeLeft(remaining);
+          // Update the error message with the timer
+          const minutes = Math.floor(remaining / 60);
+          const seconds = remaining % 60;
+          setError(
+            `Account locked. Try again in ${minutes}:${seconds.toString().padStart(2, "0")}`
+          );
+        }
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isLocked, lockUntil]);
+
+  // Theme toggle
   useEffect(() => {
     document.documentElement.className = theme;
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
+  const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
+
+  // Load remembered email
+  useEffect(() => {
+    const saved = localStorage.getItem("rememberedEmail");
+    if (saved) {
+      setEmail(saved);
+      setRememberMe(true);
+    }
+  }, []);
+
+  // Helpers for lock state
+  const updateLockState = (attempts: number, lockTime: number | null) => {
+    setFailedAttempts(attempts);
+    localStorage.setItem("loginFailedAttempts", attempts.toString());
+    if (lockTime) {
+      setLockUntil(lockTime);
+      localStorage.setItem("loginLockUntil", lockTime.toString());
+      // Compute initial time left
+      const remaining = Math.floor((lockTime - Date.now()) / 1000);
+      setTimeLeft(remaining > 0 ? remaining : 0);
+    } else {
+      setLockUntil(null);
+      localStorage.removeItem("loginLockUntil");
+      setTimeLeft(0);
+    }
   };
 
+  // Main submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    // Check lock
+    if (isLocked) {
+      // Timer will update the message automatically
+      return;
+    }
+
     setLoading(true);
     try {
       await login(email, password);
+
+      // Handle "Remember me"
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+      }
+
+      // Reset failed attempts on success
+      updateLockState(0, null);
+
       navigate("/dashboard");
     } catch (err: any) {
-      const detail = err?.response?.data?.detail;
-      if (Array.isArray(detail)) {
-        setError(detail.map((d: any) => d.msg).join(", "));
-      } else if (typeof detail === "string") {
-        setError(detail);
+      const newAttempts = failedAttempts + 1;
+      let lockTime: number | null = null;
+      if (newAttempts >= 5) {
+        // Lock for 2 minutes
+        lockTime = Date.now() + 2 * 60 * 1000;
+        setError("Too many failed attempts. Account locked for 2 minutes.");
       } else {
-        setError("Login failed");
+        const remaining = 5 - newAttempts;
+        const msg = err.message || "Invalid credentials.";
+        setError(`${msg} ${remaining} attempt(s) remaining.`);
       }
+      updateLockState(newAttempts, lockTime);
     } finally {
       setLoading(false);
     }
@@ -59,7 +165,7 @@ const Login = () => {
         transition: "background-color 0.3s ease",
       }}
     >
-      {/* Theme Toggle Button - Top Right */}
+      {/* Theme toggle button */}
       <button
         onClick={toggleTheme}
         style={{
@@ -82,7 +188,7 @@ const Login = () => {
         {isDark ? "☀️" : "🌙"}
       </button>
 
-      {/* Login Card */}
+      {/* Login card */}
       <div
         style={{
           backgroundColor: isDark ? "#1f2937" : "#ffffff",
@@ -106,7 +212,7 @@ const Login = () => {
             marginBottom: "0.5rem",
           }}
         >
-          Welcome Back
+          Sign in to your account
         </h2>
         <p
           style={{
@@ -116,7 +222,7 @@ const Login = () => {
             fontSize: "0.95rem",
           }}
         >
-          Sign in to your account
+          Enter your credentials to continue
         </p>
 
         {error && (
@@ -136,6 +242,7 @@ const Login = () => {
         )}
 
         <form onSubmit={handleSubmit}>
+          {/* Email */}
           <div style={{ marginBottom: "1rem" }}>
             <label
               style={{
@@ -146,11 +253,11 @@ const Login = () => {
                 fontSize: "0.9rem",
               }}
             >
-              Email Address
+              EMAIL
             </label>
             <input
               type="email"
-              placeholder="you@example.com"
+              placeholder="sirjan.244052@sggscc.ac.in"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={{
@@ -173,7 +280,8 @@ const Login = () => {
             />
           </div>
 
-          <div style={{ marginBottom: "1.5rem" }}>
+          {/* Password */}
+          <div style={{ marginBottom: "1rem" }}>
             <label
               style={{
                 display: "block",
@@ -183,12 +291,12 @@ const Login = () => {
                 fontSize: "0.9rem",
               }}
             >
-              Password
+              PASSWORD
             </label>
             <div style={{ position: "relative" }}>
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
+                placeholder="********"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 style={{
@@ -232,52 +340,77 @@ const Login = () => {
             </div>
           </div>
 
+          {/* Remember me & Forgot password */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "1.5rem",
+            }}
+          >
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                fontSize: "0.9rem",
+                color: isDark ? "#e5e7eb" : "#374151",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                style={{
+                  width: "1rem",
+                  height: "1rem",
+                  accentColor: "#2563eb",
+                  cursor: "pointer",
+                }}
+              />
+              Remember me
+            </label>
+            <Link
+              to="/forgot-password"
+              style={{
+                fontSize: "0.9rem",
+                color: "#2563eb",
+                textDecoration: "underline",
+              }}
+            >
+              Forgot password?
+            </Link>
+          </div>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || isLocked}
             style={{
               width: "100%",
               padding: "0.8rem",
-              backgroundColor: loading ? "#60a5fa" : "#2563eb",
+              backgroundColor: loading || isLocked ? "#60a5fa" : "#2563eb",
               color: "white",
               border: "none",
               borderRadius: "8px",
               fontWeight: "600",
               fontSize: "1rem",
-              cursor: loading ? "not-allowed" : "pointer",
+              cursor: loading || isLocked ? "not-allowed" : "pointer",
               transition: "background-color 0.2s",
             }}
             onMouseEnter={(e) => {
-              if (!loading) e.currentTarget.style.backgroundColor = "#1d4ed8";
+              if (!loading && !isLocked)
+                e.currentTarget.style.backgroundColor = "#1d4ed8";
             }}
             onMouseLeave={(e) => {
-              if (!loading) e.currentTarget.style.backgroundColor = "#2563eb";
+              if (!loading && !isLocked)
+                e.currentTarget.style.backgroundColor = "#2563eb";
             }}
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
-
-        <p
-          style={{
-            textAlign: "center",
-            marginTop: "1.5rem",
-            fontSize: "0.9rem",
-            color: isDark ? "#9ca3af" : "#6b7280",
-          }}
-        >
-          Don't have an account?{" "}
-          <Link
-            to="/register"
-            style={{
-              color: "#2563eb",
-              textDecoration: "underline",
-              fontWeight: "500",
-            }}
-          >
-            Create one
-          </Link>
-        </p>
       </div>
     </div>
   );

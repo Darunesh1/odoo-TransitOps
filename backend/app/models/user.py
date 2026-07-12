@@ -1,11 +1,20 @@
 from datetime import datetime, timezone
-from typing import Optional
+import enum
+from typing import Optional, List
 import uuid
 from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+
+class UserRole(str, enum.Enum):
+    ADMIN = "ADMIN"
+    FLEET_MANAGER = "FLEET_MANAGER"
+    DISPATCHER = "DISPATCHER"
+    SAFETY_OFFICER = "SAFETY_OFFICER"
+    FINANCIAL_ANALYST = "FINANCIAL_ANALYST"
 
 
 class User(Base):
@@ -29,9 +38,9 @@ class User(Base):
         String(255),
         nullable=False,
     )
-    full_name: Mapped[Optional[str]] = mapped_column(
+    full_name: Mapped[str] = mapped_column(
         String(255),
-        nullable=True,
+        nullable=False,
     )
     is_active: Mapped[bool] = mapped_column(
         Boolean,
@@ -45,7 +54,7 @@ class User(Base):
     )
     is_verified: Mapped[bool] = mapped_column(
         Boolean,
-        default=False,
+        default=True,
         nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(
@@ -59,3 +68,25 @@ class User(Base):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+
+    # Relationships
+    roles: Mapped[List["Role"]] = relationship(
+        "Role",
+        secondary="user_roles",
+        back_populates="users",
+        lazy="selectin",
+    )
+    trips: Mapped[List["Trip"]] = relationship(
+        "Trip", back_populates="creator", cascade="all, delete-orphan"
+    )
+    maintenance_logs: Mapped[List["MaintenanceLog"]] = relationship(
+        "MaintenanceLog", back_populates="creator", cascade="all, delete-orphan"
+    )
+    fuel_logs: Mapped[List["FuelLog"]] = relationship(
+        "FuelLog", back_populates="creator", cascade="all, delete-orphan"
+    )
+    expenses: Mapped[List["Expense"]] = relationship(
+        "Expense", back_populates="creator", cascade="all, delete-orphan"
+    )
+
+
