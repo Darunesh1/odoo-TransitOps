@@ -120,7 +120,7 @@ async def init_db() -> None:
 
     logger.info("Checking if initial superuser exists...")
     async with async_session_maker() as session:
-        query = select(User).where(User.email == settings.FIRST_SUPERUSER_EMAIL.lower().strip())
+        query = select(User).where(User.email == settings.SUPERUSER_EMAIL.lower().strip())
         result = await session.execute(query)
         user = result.scalar_one_or_none()
 
@@ -131,9 +131,9 @@ async def init_db() -> None:
             role_result = await session.execute(role_query)
             admin_role = role_result.scalar_one()
 
-            hashed_pwd = hash_password(settings.FIRST_SUPERUSER_PASSWORD)
+            hashed_pwd = hash_password(settings.SUPERUSER_PASSWORD)
             superuser = User(
-                email=settings.FIRST_SUPERUSER_EMAIL.lower().strip(),
+                email=settings.SUPERUSER_EMAIL.lower().strip(),
                 hashed_password=hashed_pwd,
                 full_name="System Administrator",
                 roles=[admin_role],
@@ -143,7 +143,7 @@ async def init_db() -> None:
             )
             session.add(superuser)
             await session.commit()
-            logger.info(f"Initial superuser seeded successfully: {settings.FIRST_SUPERUSER_EMAIL}")
+            logger.info(f"Initial superuser seeded successfully: {settings.SUPERUSER_EMAIL}")
         else:
             logger.info("Superuser already exists in the database.")
 
