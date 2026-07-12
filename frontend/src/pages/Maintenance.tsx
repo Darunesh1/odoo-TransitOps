@@ -69,6 +69,8 @@ const MaintenancePage: React.FC = () => {
   const [vehicleError, setVehicleError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [closingId, setClosingId] = useState<string | null>(null);
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [filters, setFilters] = useState<MaintenanceFilters>({
     search: "",
     status: "",
@@ -204,23 +206,37 @@ const MaintenancePage: React.FC = () => {
     setError(null);
 
     try {
-      await maintenanceService.createMaintenanceLog({
-        ...formData,
+      const payload = {
         maintenance_type: formData.maintenance_type.trim(),
         description: formData.description?.trim() || undefined,
+        cost: formData.cost,
         started_at: new Date(formData.started_at || new Date().toISOString()).toISOString(),
-      });
+      };
 
-      setFormData({
-        vehicle_id: "",
-        maintenance_type: "",
-        description: "",
-        cost: 0,
-        started_at: toLocalDateTimeInput(),
-      });
+      if (editingRecordId) {
+        await maintenanceService.updateMaintenanceLog(editingRecordId, payload);
+        handleCancelEdit();
+      } else {
+        await maintenanceService.createMaintenanceLog({
+          ...payload,
+          vehicle_id: formData.vehicle_id,
+        });
+        setFormData({
+          vehicle_id: "",
+          maintenance_type: "",
+          description: "",
+          cost: 0,
+          started_at: toLocalDateTimeInput(),
+        });
+      }
       await refreshAll();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Failed to create maintenance record");
+      setError(
+        err?.response?.data?.detail ||
+          (editingRecordId
+            ? "Failed to update maintenance record"
+            : "Failed to create maintenance record")
+      );
     } finally {
       setSubmitting(false);
     }
@@ -241,6 +257,54 @@ const MaintenancePage: React.FC = () => {
     } finally {
       setClosingId(null);
     }
+  };
+
+  const handleCancelMaintenance = async (record: MaintenanceRecord) => {
+    if (!window.confirm("Cancel this maintenance record and return the vehicle to service?")) {
+      return;
+    }
+
+    setCancellingId(record.id);
+    setError(null);
+    try {
+      await maintenanceService.cancelMaintenanceLog(record.id);
+      await refreshAll();
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || "Failed to cancel maintenance record");
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const handleEditClick = (record: MaintenanceRecord) => {
+    setEditingRecordId(record.id);
+    let formattedStart = "";
+    if (record.started_at) {
+      try {
+        const d = new Date(record.started_at);
+        formattedStart = toLocalDateTimeInput(d);
+      } catch (err) {
+        console.error("Failed to format started_at date", err);
+      }
+    }
+    setFormData({
+      vehicle_id: record.vehicle_id,
+      maintenance_type: record.maintenance_type,
+      description: record.description || "",
+      cost: record.cost,
+      started_at: formattedStart || toLocalDateTimeInput(),
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRecordId(null);
+    setFormData({
+      vehicle_id: "",
+      maintenance_type: "",
+      description: "",
+      cost: 0,
+      started_at: toLocalDateTimeInput(),
+    });
   };
 
   return (
@@ -510,15 +574,53 @@ const MaintenancePage: React.FC = () => {
                         </td>
                         <td style={{ padding: "14px 10px", verticalAlign: "top" }}>
                           {record.status === MaintenanceStatus.ACTIVE ? (
-                            <button
-                              type="button"
-                              className="maintenance-button"
-                              onClick={() => void handleCloseMaintenance(record)}
-                              disabled={closingId === record.id}
-                              style={{ background: "#16a34a", color: "#fff" }}
-                            >
-                              {closingId === record.id ? "Closing..." : "Close Maintenance"}
-                            </button>
+                            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                              <button
+                                type="button"
+                                className="maintenance-button"
+                                onClick={() => handleEditClick(record)}
+                                disabled={submitting || closingId === record.id || cancellingId === record.id}
+                                style={{
+                                  background: "#3b82f6",
+                                  color: "#fff",
+                                  padding: "6px 12px",
+                                  borderRadius: "8px",
+                                  fontSize: "13px",
+                                }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="maintenance-button"
+                                onClick={() => void handleCloseMaintenance(record)}
+                                disabled={submitting || closingId === record.id || cancellingId === record.id}
+                                style={{
+                                  background: "#16a34a",
+                                  color: "#fff",
+                                  padding: "6px 12px",
+                                  borderRadius: "8px",
+                                  fontSize: "13px",
+                                }}
+                              >
+                                {closingId === record.id ? "Closing..." : "Complete"}
+                              </button>
+                              <button
+                                type="button"
+                                className="maintenance-button"
+                                onClick={() => void handleCancelMaintenance(record)}
+                                disabled={submitting || closingId === record.id || cancellingId === record.id}
+                                style={{
+                                  background: "#ef4444",
+                                  color: "#fff",
+                                  padding: "6px 12px",
+                                  borderRadius: "8px",
+                                  fontSize: "13px",
+                                }}
+                              >
+                                {cancellingId === record.id ? "Cancelling..." : "Cancel"}
+                              </button>
+                            </div>
                           ) : (
                             <span style={{ color: colors.muted, fontSize: 13 }}>No actions</span>
                           )}
@@ -533,12 +635,16 @@ const MaintenancePage: React.FC = () => {
         </section>
 
         <aside className="maintenance-card" style={{ padding: 20 }}>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Create maintenance</h2>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>
+            {editingRecordId ? "Edit Maintenance" : "Create maintenance"}
+          </h2>
           <p style={{ margin: "6px 0 20px", color: colors.muted }}>
-            Pick an available vehicle. The backend moves it to IN_SHOP when the record is created.
+            {editingRecordId
+              ? "Updating details of an active maintenance job."
+              : "Pick an available vehicle. The backend moves it to IN_SHOP when the record is created."}
           </p>
 
-          {!loadingVehicles && availableVehicles.length === 0 && (
+          {!editingRecordId && !loadingVehicles && availableVehicles.length === 0 && (
             <div
               style={{
                 marginBottom: 16,
@@ -561,14 +667,25 @@ const MaintenancePage: React.FC = () => {
                 value={formData.vehicle_id}
                 onChange={handleFormChange}
                 required
-                disabled={submitting || loadingVehicles}
+                disabled={submitting || loadingVehicles || !!editingRecordId}
               >
                 <option value="">Select vehicle</option>
-                {availableVehicles.map((vehicle) => (
-                  <option key={vehicle.id} value={vehicle.id}>
-                    {vehicle.registration_number} - {vehicle.name}
-                  </option>
-                ))}
+                {editingRecordId ? (
+                  (() => {
+                    const vehicle = vehicleMap[formData.vehicle_id];
+                    return vehicle ? (
+                      <option key={vehicle.id} value={vehicle.id}>
+                        {vehicle.registration_number} - {vehicle.name}
+                      </option>
+                    ) : null;
+                  })()
+                ) : (
+                  availableVehicles.map((vehicle) => (
+                    <option key={vehicle.id} value={vehicle.id}>
+                      {vehicle.registration_number} - {vehicle.name}
+                    </option>
+                  ))
+                )}
               </select>
             </label>
 
@@ -627,18 +744,44 @@ const MaintenancePage: React.FC = () => {
               </label>
             </div>
 
-            <button
-              type="submit"
-              className="maintenance-button"
-              disabled={submitting || loadingVehicles || availableVehicles.length === 0}
-              style={{
-                background: "#2563eb",
-                color: "#fff",
-                marginTop: 4,
-              }}
-            >
-              {submitting ? "Creating..." : "Create Maintenance"}
-            </button>
+            <div style={{ display: "flex", gap: "10px", marginTop: 4 }}>
+              <button
+                type="submit"
+                className="maintenance-button"
+                disabled={
+                  submitting ||
+                  loadingVehicles ||
+                  (!editingRecordId && availableVehicles.length === 0)
+                }
+                style={{
+                  flex: 1,
+                  background: "#2563eb",
+                  color: "#fff",
+                }}
+              >
+                {submitting
+                  ? editingRecordId
+                    ? "Saving..."
+                    : "Creating..."
+                  : editingRecordId
+                  ? "Save Changes"
+                  : "Create Maintenance"}
+              </button>
+              {editingRecordId && (
+                <button
+                  type="button"
+                  className="maintenance-button"
+                  onClick={handleCancelEdit}
+                  disabled={submitting}
+                  style={{
+                    background: isDark ? "#374151" : "#e5e7eb",
+                    color: colors.text,
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </form>
         </aside>
       </div>
