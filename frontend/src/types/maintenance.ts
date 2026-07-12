@@ -43,3 +43,7 @@ export interface MaintenanceFilters {
   skip?: number;
   limit?: number;
 }
+
+export type Maintenance = MaintenanceRecord;
+export type MaintenanceCreate = MaintenanceCreateInput;
+export type MaintenanceUpdate = MaintenanceUpdateInput;
