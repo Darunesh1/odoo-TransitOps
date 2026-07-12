@@ -65,11 +65,27 @@ class UserUpdate(BaseModel):
         return v
 
 
+class AdminUserUpdate(BaseModel):
+    """Schema for admin updates to common account fields only."""
+
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = Field(default=None, max_length=255)
+
+
+class UserRolesAdd(BaseModel):
+    """Schema for adding one or more roles to a user."""
+
+    roles: List[UserRole] = Field(..., min_length=1)
+
+    @field_validator("roles", mode="after")
+    @classmethod
+    def deduplicate_roles(cls, v):
+        return list(set(v))
+
+
 class UserRead(UserBase):
     """Schema returned when reading user details from the database."""
 
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
-
-

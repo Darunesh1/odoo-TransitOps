@@ -9,16 +9,26 @@ from app.services import (
     vehicle_service,
 )
 from app.services.user_service import (
+    admin_update_user,
+    add_roles_to_user,
     create_user,
     get_user_by_email,
     get_user_by_id,
+    get_users,
+    remove_role_from_user,
+    set_user_active_status,
     update_user,
 )
 
 __all__ = [
+    "admin_update_user",
+    "add_roles_to_user",
     "create_user",
     "get_user_by_email",
     "get_user_by_id",
+    "get_users",
+    "remove_role_from_user",
+    "set_user_active_status",
     "update_user",
     "vehicle_service",
     "driver_service",
