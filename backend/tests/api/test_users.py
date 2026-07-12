@@ -204,7 +204,8 @@ async def test_non_admin_creates_user_forbidden(client: AsyncClient, db_session:
 
     response = await client.post("/users/", headers=headers, json=payload)
     assert response.status_code == 403
-    assert response.json()["detail"] == "The user does not have enough privileges"
+    assert response.json()["detail"] == "Insufficient permissions"
+
 
 
 @pytest.mark.asyncio
