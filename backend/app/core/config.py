@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
 
     # Initial Superuser Configuration
-    FIRST_SUPERUSER_EMAIL: str = "admin@transitops.com"
-    FIRST_SUPERUSER_PASSWORD: str = "admin123456"
+    SUPERUSER_EMAIL: str = "admin@transitops.com"
+    SUPERUSER_PASSWORD: str = "admin123456"
 
     # PostgreSQL Configuration
     POSTGRES_SERVER: str = "db"
