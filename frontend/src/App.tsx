@@ -10,6 +10,7 @@ import FleetPage from "./pages/FleetPage";
 import DriversPage from "./pages/DriversPage"; 
 import TripDispatcherPage from "./pages/TripDispatcherPage";
 import MaintenancePage from './pages/MaintenancePage';
+import FuelExpensesPage from "./pages/FuelExpensesPage";
 
 // Placeholder components for other pages
 const Trips = () => <div style={{ padding: "2rem" }}>📍 Trips Page</div>;
@@ -121,7 +122,7 @@ function App() {
             element={
               <PrivateRoute>
                 <Layout>
-                  <Fuel />
+                  <FuelExpensesPage />
                 </Layout>
               </PrivateRoute>
             }
