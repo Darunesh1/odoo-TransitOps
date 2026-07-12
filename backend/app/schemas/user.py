@@ -26,7 +26,7 @@ class UserCreate(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(..., max_length=255)
     role: UserRole
-    is_superuser: bool = False
+
 
 
 class UserUpdate(BaseModel):
