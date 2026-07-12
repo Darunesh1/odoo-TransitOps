@@ -1,20 +1,25 @@
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User, UserRole
+from app.models import User, UserRole, Role
 from app.core.security import hash_password
 
 
 @pytest.mark.asyncio
 async def test_login_success(client: AsyncClient, db_session: AsyncSession):
+    # Retrieve role
+    result = await db_session.execute(select(Role).where(Role.name == "FLEET_MANAGER"))
+    role_obj = result.scalar_one()
+
     # Create user in DB
     hashed_pwd = hash_password("mypassword123")
     user = User(
         email="loginuser@example.com",
         hashed_password=hashed_pwd,
         full_name="Login User",
-        role=UserRole.FLEET_MANAGER,
+        roles=[role_obj],
         is_active=True,
         is_verified=True,
     )
@@ -47,13 +52,17 @@ async def test_login_failure(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_refresh_token_success(client: AsyncClient, db_session: AsyncSession):
+    # Retrieve role
+    result = await db_session.execute(select(Role).where(Role.name == "FLEET_MANAGER"))
+    role_obj = result.scalar_one()
+
     # Create user in DB
     hashed_pwd = hash_password("password123")
     user = User(
         email="refresh@example.com",
         hashed_password=hashed_pwd,
         full_name="Refresh User",
-        role=UserRole.FLEET_MANAGER,
+        roles=[role_obj],
         is_active=True,
         is_verified=True,
     )
