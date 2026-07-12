@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import api from "../api/axiosInstance";
 
 interface User {
   id: string;
   email: string;
   full_name: string;
+  role: string;
   is_active: boolean;
   is_superuser: boolean;
   is_verified: boolean;
@@ -20,7 +21,7 @@ interface AuthContextType {
   register: (full_name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   refreshAccessToken: () => Promise<void>;
-  fetchUserProfile: () => Promise<void>;
+  fetchUserProfile: (token?: string) => Promise<void>; // optional token param
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,7 +35,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.getItem("refresh_token")
   );
 
-  // Login: sends form-urlencoded with username and password
+  // --- Axios interceptor to add token to every request ---
+  useEffect(() => {
+    // Add a request interceptor
+    const interceptor = api.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem("access_token");
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    // Cleanup interceptor on unmount
+    return () => {
+      api.interceptors.request.eject(interceptor);
+    };
+  }, []);
+
+  // --- Login ---
   const login = async (email: string, password: string) => {
     const formData = new URLSearchParams();
     formData.append("username", email);
@@ -45,21 +66,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     const { access_token, refresh_token } = res.data;
+    // Store tokens immediately
     localStorage.setItem("access_token", access_token);
     localStorage.setItem("refresh_token", refresh_token);
     setAccessToken(access_token);
     setRefreshToken(refresh_token);
 
-    // After login, fetch user profile
-    await fetchUserProfile();
+    // Now fetch user profile – pass token directly to avoid state timing issues
+    await fetchUserProfile(access_token);
   };
 
-  // Register: unchanged (JSON)
+  // --- Register (unchanged) ---
   const register = async (full_name: string, email: string, password: string) => {
     await api.post("/auth/register", { email, password, full_name });
   };
 
-  // Refresh access token using refresh token
+  // --- Refresh access token ---
   const refreshAccessToken = async () => {
     if (!refreshToken) throw new Error("No refresh token available");
 
@@ -69,14 +91,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAccessToken(access_token);
   };
 
-  // Fetch user profile (GET /users/me)
-  const fetchUserProfile = async () => {
-    if (!accessToken) return;
-    const res = await api.get("/users/me");
-    setUser(res.data);
+  // --- Fetch user profile (optionally with a provided token) ---
+  const fetchUserProfile = async (token?: string) => {
+    try {
+      const headers: any = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      // If no token is provided, rely on the interceptor (which uses localStorage)
+      const res = await api.get("/users/me", { headers });
+      setUser(res.data);
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+      // If token is invalid, log out
+      logout();
+    }
   };
 
-  // Logout: clear all tokens and user
+  // --- Logout ---
   const logout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");

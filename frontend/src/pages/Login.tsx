@@ -6,23 +6,19 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Form fields
+  // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("Fleet Manager");
+  const [role, setRole] = useState("Fleet Manager"); // UI only
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  // UI state
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Theme
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "light";
-  });
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
 
-  // Lock state (persisted)
+  // Account locking (5 attempts → 5 min lock)
   const [failedAttempts, setFailedAttempts] = useState<number>(() => {
     const stored = localStorage.getItem("loginFailedAttempts");
     return stored ? parseInt(stored, 10) : 0;
@@ -32,29 +28,26 @@ const Login = () => {
     return stored ? parseInt(stored, 10) : null;
   });
 
-  // Check lock status
   const isLocked = lockUntil !== null && Date.now() < lockUntil;
 
-  // Load remembered email if it exists
-  useEffect(() => {
-    const savedEmail = localStorage.getItem("rememberedEmail");
-    if (savedEmail) {
-      setEmail(savedEmail);
-      setRememberMe(true);
-    }
-  }, []);
-
-  // Theme toggle effect
+  // Theme toggle
   useEffect(() => {
     document.documentElement.className = theme;
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
-  };
+  const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
 
-  // Save failed attempts and lock state
+  // Load remembered email
+  useEffect(() => {
+    const saved = localStorage.getItem("rememberedEmail");
+    if (saved) {
+      setEmail(saved);
+      setRememberMe(true);
+    }
+  }, []);
+
+  // Helpers for lock state
   const updateLockState = (attempts: number, lockTime: number | null) => {
     setFailedAttempts(attempts);
     localStorage.setItem("loginFailedAttempts", attempts.toString());
@@ -67,11 +60,12 @@ const Login = () => {
     }
   };
 
+  // Main submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Check if account is locked
+    // Check lock
     if (isLocked) {
       const remaining = Math.ceil((lockUntil! - Date.now()) / 60000);
       setError(`Account locked. Try again in ${remaining} minute(s).`);
@@ -80,39 +74,34 @@ const Login = () => {
 
     setLoading(true);
     try {
-      // Call login with email, password, and rememberMe (third param expects boolean)
-      await login(email, password, rememberMe);
-      // Success → reset failed attempts
-      updateLockState(0, null);
+      // Call the context login
+      await login(email, password);
+
+      // Handle "Remember me"
       if (rememberMe) {
         localStorage.setItem("rememberedEmail", email);
       } else {
         localStorage.removeItem("rememberedEmail");
       }
+
+      // Reset failed attempts on success
+      updateLockState(0, null);
+
+      // Navigate to dashboard
       navigate("/dashboard");
     } catch (err: any) {
-      // Failed login → increment attempts
+      // Increment failed attempts
       const newAttempts = failedAttempts + 1;
       let lockTime: number | null = null;
       if (newAttempts >= 5) {
-        // Lock for 5 minutes
-        lockTime = Date.now() + 5 * 60 * 1000;
+        lockTime = Date.now() + 5 * 60 * 1000; // 5 minutes lock
         setError("Too many failed attempts. Account locked for 5 minutes.");
       } else {
         const remaining = 5 - newAttempts;
-        setError(`Invalid credentials. ${remaining} attempt(s) remaining.`);
+        const msg = err.message || "Invalid credentials.";
+        setError(`${msg} ${remaining} attempt(s) remaining.`);
       }
       updateLockState(newAttempts, lockTime);
-
-      // Also show any backend error if available
-      const detail = err?.response?.data?.detail;
-      if (detail) {
-        if (Array.isArray(detail)) {
-          setError(detail.map((d: any) => d.msg).join(", "));
-        } else if (typeof detail === "string") {
-          setError(detail);
-        }
-      }
     } finally {
       setLoading(false);
     }
@@ -133,7 +122,7 @@ const Login = () => {
         transition: "background-color 0.3s ease",
       }}
     >
-      {/* Theme Toggle Button */}
+      {/* Theme toggle button */}
       <button
         onClick={toggleTheme}
         style={{
@@ -156,7 +145,7 @@ const Login = () => {
         {isDark ? "☀️" : "🌙"}
       </button>
 
-      {/* Login Card */}
+      {/* Login card */}
       <div
         style={{
           backgroundColor: isDark ? "#1f2937" : "#ffffff",
@@ -225,7 +214,7 @@ const Login = () => {
             </label>
             <input
               type="email"
-              placeholder="Raven.k@transitops.in"
+              placeholder="sirjan.244052@sggscc.ac.in"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={{
@@ -308,7 +297,7 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Role (RBAC) */}
+          {/* Role (UI only) */}
           <div style={{ marginBottom: "1rem" }}>
             <label
               style={{
@@ -393,15 +382,13 @@ const Login = () => {
             </Link>
           </div>
 
-          {/* Sign In Button */}
           <button
             type="submit"
             disabled={loading || isLocked}
             style={{
               width: "100%",
               padding: "0.8rem",
-              backgroundColor:
-                loading || isLocked ? "#60a5fa" : "#2563eb",
+              backgroundColor: loading || isLocked ? "#60a5fa" : "#2563eb",
               color: "white",
               border: "none",
               borderRadius: "8px",
