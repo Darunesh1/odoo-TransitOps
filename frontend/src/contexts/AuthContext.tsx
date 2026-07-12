@@ -1,14 +1,13 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import api from "../api/axiosInstance";
 
-// Define roles as a union type
-export type UserRole = "Fleet Manager" | "Driver" | "Safety Officer" | "Financial Analyst" | "ADMIN";
+import { UserRole } from "../types/user";
 
 interface User {
   id: string;
   email: string;
   full_name: string;
-  role: UserRole;
+  roles: UserRole[];
   is_active: boolean;
   is_superuser: boolean;
   is_verified: boolean;
@@ -112,13 +111,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const headers: any = {};
       if (token) headers.Authorization = `Bearer ${token}`;
       const res = await api.get("/users/me", { headers });
-      // Ensure role is one of the allowed types, fallback to "Fleet Manager"
       const userData = res.data;
-      const validRole: UserRole =
-        ["Fleet Manager", "Driver", "Safety Officer", "Financial Analyst", "ADMIN"].includes(userData.role)
-          ? userData.role
-          : "Fleet Manager";
-      setUser({ ...userData, role: validRole });
+      const validRoles = Array.isArray(userData.roles) ? userData.roles : [];
+      setUser({ ...userData, roles: validRoles });
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
       logout();
