@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { userService } from "../services/userService";
 import { UserRead, UserRole, UserFilters } from "../types/user";
 import { useAuth } from "../contexts/AuthContext";
+import { getErrorMessage } from "../utils/errors";
 import {
   User as UserIcon,
   Shield,
@@ -110,7 +111,7 @@ const UserManagement: React.FC = () => {
       setUsers(data);
     } catch (err: any) {
       console.error(err);
-      setError(err.response?.data?.detail || "Failed to load user registry.");
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -140,7 +141,7 @@ const UserManagement: React.FC = () => {
       setAddForm({ email: "", password: "", full_name: "", roles: [] });
       await loadUsers();
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to create user.");
+      setError(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -157,7 +158,7 @@ const UserManagement: React.FC = () => {
       setSelectedUser(null);
       await loadUsers();
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to update user details.");
+      setError(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -182,7 +183,7 @@ const UserManagement: React.FC = () => {
       }
       await loadUsers();
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to change user active status.");
+      setError(getErrorMessage(err));
     }
   };
 
@@ -216,7 +217,7 @@ const UserManagement: React.FC = () => {
       setSelectedUser(null);
       await loadUsers();
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to update user roles.");
+      setError(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

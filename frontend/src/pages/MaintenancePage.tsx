@@ -3,6 +3,7 @@ import { maintenanceService } from "../services/maintenanceService";
 import { vehicleService } from "../services/vehicleService";
 import { Maintenance, MaintenanceCreate, MaintenanceStatus } from "../types/maintenance";
 import { Vehicle, VehicleStatus } from "../types/vehicle";
+import { getErrorMessage } from "../utils/errors";
 
 const MaintenancePage: React.FC = () => {
   // ─── Theme ──────────────────────────────────────────────
@@ -207,7 +208,7 @@ const MaintenancePage: React.FC = () => {
       }
       closeModal();
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Operation failed");
+      alert(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -222,7 +223,7 @@ const MaintenancePage: React.FC = () => {
         prev.map((l) => (l.id === updated.id ? { ...updated, vehicle: vehiclesMap[updated.vehicle_id] } : l))
       );
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to complete maintenance");
+      alert(getErrorMessage(err));
     }
   };
 
@@ -234,7 +235,7 @@ const MaintenancePage: React.FC = () => {
         prev.map((l) => (l.id === updated.id ? { ...updated, vehicle: vehiclesMap[updated.vehicle_id] } : l))
       );
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to cancel maintenance");
+      alert(getErrorMessage(err));
     }
   };
 
