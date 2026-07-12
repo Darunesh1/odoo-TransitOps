@@ -21,7 +21,8 @@ import {
 } from "lucide-react";
 
 const Sidebar = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const isAdmin = user && (user.roles.includes("ADMIN") || user.is_superuser);
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => {
@@ -99,6 +100,7 @@ const Sidebar = () => {
     { path: "/analytics", icon: BarChart3, label: "Analytics" },
     { path: "/documents", icon: FileText, label: "Documents" },
     { path: "/notifications", icon: Bell, label: "Notifications" },
+    ...(isAdmin ? [{ path: "/users", icon: User, label: "User Management" }] : []),
   ];
 
   const bottomItems = [{ path: "/settings", icon: Settings, label: "Settings" }];
