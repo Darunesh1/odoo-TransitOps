@@ -9,8 +9,6 @@ import {
   Wrench,
   Fuel,
   BarChart3,
-  FileText,
-  Bell,
   Settings,
   LogOut,
   Menu,
@@ -109,8 +107,6 @@ const Sidebar = () => {
     ...(canSeeMaintenance ? [{ path: "/maintenance", icon: Wrench, label: "Maintenance" }] : []),
     ...(canSeeFuel ? [{ path: "/fuel", icon: Fuel, label: "Fuel & Expenses" }] : []),
     ...(canSeeAnalytics ? [{ path: "/analytics", icon: BarChart3, label: "Analytics" }] : []),
-    { path: "/documents", icon: FileText, label: "Documents" },
-    { path: "/notifications", icon: Bell, label: "Notifications" },
     ...(isAdmin ? [{ path: "/users", icon: User, label: "User Management" }] : []),
   ];
 

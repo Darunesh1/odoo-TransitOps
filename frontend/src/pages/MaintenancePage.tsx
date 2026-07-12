@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { maintenanceService } from "../services/maintenanceService";
 import { vehicleService } from "../services/vehicleService";
 import { Maintenance, MaintenanceCreate, MaintenanceStatus } from "../types/maintenance";
@@ -114,10 +114,9 @@ const MaintenancePage: React.FC = () => {
     setUsingMockData(false);
 
     try {
-      // Try to fetch real data – search term is passed to the backend
+      // Fetch the current maintenance set; search is applied client-side for responsiveness.
       const [logsData, allVehicles] = await Promise.all([
         maintenanceService.getMaintenanceLogs({
-          search: searchTerm || undefined,
           status: statusFilter ? (statusFilter as any) : undefined,
           maintenance_type: typeFilter || undefined,
           vehicle_id: vehicleFilter || undefined,
@@ -150,7 +149,7 @@ const MaintenancePage: React.FC = () => {
   useEffect(() => {
     loadAllData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, statusFilter, typeFilter, vehicleFilter, startDateFilter, endDateFilter]);
+  }, [statusFilter, typeFilter, vehicleFilter, startDateFilter, endDateFilter]);
 
   // ─── Form Handlers ──────────────────────────────────────
   const handleFormChange = (
@@ -274,6 +273,24 @@ const MaintenancePage: React.FC = () => {
       minute: "2-digit",
     });
   };
+
+  const filteredLogs = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return logs;
+    return logs.filter((log) => {
+      const vehicle = vehiclesMap[log.vehicle_id];
+      const vehicleText = vehicle
+        ? `${vehicle.name} ${vehicle.registration_number}`
+        : log.vehicle_id;
+
+      return (
+        log.maintenance_type.toLowerCase().includes(term) ||
+        (log.description || "").toLowerCase().includes(term) ||
+        vehicleText.toLowerCase().includes(term) ||
+        log.status.toLowerCase().includes(term)
+      );
+    });
+  }, [logs, searchTerm, vehiclesMap]);
 
   // ─── Themed Colors ──────────────────────────────────────
   const colors = {
@@ -535,12 +552,12 @@ const MaintenancePage: React.FC = () => {
               <tr>
                 <td colSpan={6} style={{ padding: "32px", textAlign: "center", color: colors.textMuted }}>Loading...</td>
               </tr>
-            ) : logs.length === 0 ? (
+            ) : filteredLogs.length === 0 ? (
               <tr>
                 <td colSpan={6} style={{ padding: "32px", textAlign: "center", color: colors.textMuted }}>No maintenance logs found.</td>
               </tr>
             ) : (
-              logs.map((log) => {
+              filteredLogs.map((log) => {
                 const statusColor = getStatusColor(log.status);
                 const statusDisplay = getStatusDisplay(log.status);
                 const vehicle = vehiclesMap[log.vehicle_id];

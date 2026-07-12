@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { vehicleService } from "../services/vehicleService";
 import { Vehicle, VehicleCreate, VehicleStatus } from "../types/vehicle";
 import { getErrorMessage } from "../utils/errors";
@@ -52,16 +52,11 @@ const FleetPage: React.FC = () => {
     try {
       const params: any = {};
       if (statusFilter) params.status = statusFilter;
-      if (searchTerm) params.search = searchTerm;
       params.skip = 0;
       params.limit = 100;
-
-      console.log("🔍 Fetching vehicles with params:", params);
       const data = await vehicleService.getVehicles(params);
-      console.log("Vehicles loaded:", data);
       setVehicles(data);
     } catch (err: any) {
-      console.error("❌ Error loading vehicles:", err);
       const msg = err.response?.data?.detail || err.message || "Failed to load vehicles";
       setError(msg);
     } finally {
@@ -71,7 +66,7 @@ const FleetPage: React.FC = () => {
 
   useEffect(() => {
     loadVehicles();
-  }, [statusFilter, searchTerm]);
+  }, [statusFilter]);
 
   // ─── Form Handlers ──────────────────────────────────────
   const handleFormChange = (
@@ -188,6 +183,18 @@ const FleetPage: React.FC = () => {
     errorBg: isDark ? "#7f1d1d" : "#fee2e2",
     errorText: isDark ? "#fca5a5" : "#b91c1c",
   };
+
+  const filteredVehicles = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return vehicles;
+    return vehicles.filter((vehicle) => (
+      vehicle.registration_number.toLowerCase().includes(term) ||
+      vehicle.name.toLowerCase().includes(term) ||
+      (vehicle.model || "").toLowerCase().includes(term) ||
+      vehicle.vehicle_type.toLowerCase().includes(term) ||
+      (vehicle.region || "").toLowerCase().includes(term)
+    ));
+  }, [searchTerm, vehicles]);
 
   return (
     <div
@@ -307,12 +314,12 @@ const FleetPage: React.FC = () => {
               <tr>
                 <td colSpan={9} style={{ padding: "32px", textAlign: "center", color: colors.textMuted }}>Loading...</td>
               </tr>
-            ) : vehicles.length === 0 ? (
+            ) : filteredVehicles.length === 0 ? (
               <tr>
                 <td colSpan={9} style={{ padding: "32px", textAlign: "center", color: colors.textMuted }}>No vehicles found.</td>
               </tr>
             ) : (
-              vehicles.map((vehicle) => (
+              filteredVehicles.map((vehicle) => (
                 <tr key={vehicle.id}>
                   <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>{vehicle.registration_number}</td>
                   <td style={{ padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, color: colors.text }}>
