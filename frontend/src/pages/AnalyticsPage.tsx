@@ -72,7 +72,6 @@ const AnalyticsPage: React.FC = () => {
   const loadAnalytics = async () => {
     setLoading(true);
     setError(null);
-    setUsingMock(false);
     try {
       const params: any = {};
       if (selectedVehicle) params.vehicle_id = selectedVehicle;
@@ -82,10 +81,9 @@ const AnalyticsPage: React.FC = () => {
       const data = await analyticsService.getSummary(params);
       setSummary(data);
     } catch (err: any) {
-      console.error("Analytics API error, using mock:", err);
-      setSummary(generateMockSummary());
-      setUsingMock(true);
-      setError("⚠️ Backend unavailable – showing mock data");
+      console.error("Analytics API error:", err);
+      setError(err.response?.data?.detail || "Failed to load analytics data from API.");
+      setSummary(null);
     } finally {
       setLoading(false);
     }
@@ -241,11 +239,10 @@ const AnalyticsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Error / Mock banner */}
+      {/* Error banner */}
       {error && (
         <div style={{ padding: "12px 16px", backgroundColor: colors.errorBg, color: colors.errorText, borderRadius: "8px", marginBottom: "20px", fontSize: "14px" }}>
           {error}
-          {usingMock && <div style={{ fontSize: "12px", marginTop: "4px", opacity: 0.8 }}>Mock data displayed – backend unreachable.</div>}
         </div>
       )}
 
