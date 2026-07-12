@@ -8,6 +8,7 @@ import Logout from "./pages/Logout";
 import Sidebar from "./components/layout/Sidebar";
 import FleetPage from "./pages/FleetPage";
 import DriversPage from "./pages/DriversPage"; 
+import TripDispatcherPage from "./pages/TripDispatcherPage";
 
 // Placeholder components for other pages
 const Trips = () => <div style={{ padding: "2rem" }}>📍 Trips Page</div>;
@@ -99,7 +100,7 @@ function App() {
             element={
               <PrivateRoute>
                 <Layout>
-                  <Trips />
+                  <TripDispatcherPage />
                 </Layout>
               </PrivateRoute>
             }
