@@ -1,12 +1,9 @@
-from datetime import datetime, timedelta, timezone
 from typing import Any
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
-from app.core.config import settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -14,25 +11,9 @@ from app.core.security import (
     verify_password,
 )
 from app.schemas.token import Token, TokenPayload
-from app.schemas.user import UserCreate, UserRead
-from app.services import (
-    create_user,
-    get_user_by_email,
-    get_user_by_id,
-    verify_user_email,
-)
-from app.tasks.email_tasks import send_verification_email, send_welcome_email
+from app.services import get_user_by_email, get_user_by_id
 
 router = APIRouter()
-
-
-def create_verification_token(user_id: str) -> str:
-    """Generates a short-lived verification token for email activation (expires in 24 hours)."""
-    expire = datetime.now(timezone.utc) + timedelta(hours=24)
-    to_encode = {"exp": expire, "sub": user_id, "type": "verification"}
-    return jwt.encode(
-        to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-    )
 
 
 # Public registration is disabled. Users must be created by an administrator.
@@ -119,46 +100,3 @@ async def refresh_token(
         "token_type": "bearer",
     }
 
-
-@router.get("/verify-email")
-async def verify_email(
-    token: str = Query(...), db: AsyncSession = Depends(get_db)
-) -> Any:
-    """Verifies user email activation using token received via email link."""
-    payload_dict = decode_token(token)
-    if not payload_dict:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired verification token",
-        )
-
-    try:
-        token_data = TokenPayload(**payload_dict)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid token structure",
-        )
-
-    if token_data.type != "verification":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid token type",
-        )
-
-    user = await get_user_by_id(db, user_id=token_data.sub)  # type: ignore
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-
-    if user.is_verified:
-        return {"message": "Email address already verified."}
-
-    await verify_user_email(db, db_obj=user)
-
-    # Trigger async welcome email task
-    send_welcome_email.delay(email=user.email, full_name=user.full_name or "")
-
-    return {"message": "Email verified successfully. Welcome onboard!"}
