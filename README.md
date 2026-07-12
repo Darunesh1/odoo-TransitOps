@@ -1,150 +1,150 @@
-# Full-stack Web Template
+# TransitOps — Smart Transport Operations Platform
 
-This repository contains a full-stack web application template. The codebase is divided into two primary folders: `frontend` (FE) and `backend` (BE).
-
----
-
-## 1. Frontend (FE)
-
-The frontend is a **React + TypeScript + Vite** application styled with **Tailwind CSS**.
-
-### Prerequisites
-
-- **Node.js** (v18 or higher)
-- **npm** (comes with Node.js)
-
-### How to Run the Application
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-The frontend will be available at:
-- **Local:** [http://localhost:5173](http://localhost:5173)
-
-### Available Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Starts the development server (hot reload) |
-| `npm run build` | Builds the app for production |
-| `npm run preview` | Previews the production build locally |
-
-### Frontend Directory Structure
-
-```
-frontend/
-├── src/
-│   ├── api/                 # API calls and axios instance
-│   ├── components/          # Reusable UI components
-│   ├── contexts/            # React context providers
-│   ├── pages/               # Page components (Login, Register, etc.)
-│   ├── App.tsx              # Main app with routing
-│   ├── main.tsx             # Application entry point
-│   └── index.css            # Tailwind CSS with dark mode
-├── public/                  # Static assets
-├── index.html               # HTML template
-├── package.json             # Dependencies and scripts
-├── tailwind.config.js       # Tailwind configuration
-├── vite.config.ts           # Vite configuration
-└── .env.example             # Environment variables template
-```
+TransitOps is a modern, full-stack, enterprise-ready transport management system designed to optimize fleet operations, driver safety compliance, dispatch coordination, maintenance tracking, and financial analytics. It is equipped with role-based access control (RBAC), database seeding, and containerized running configurations.
 
 ---
 
-## 2. Backend (BE)
+## Architecture Overview
 
-The backend is a FastAPI application featuring PostgreSQL (SQLAlchemy async ORM), Redis, and Celery background tasks, built and managed using `uv`.
+* **Frontend (FE):** React + TypeScript + Vite styled with customized Vanilla CSS + tailwind utilities. Package management via `pnpm` (or `npm`).
+* **Backend (BE):** FastAPI + SQLAlchemy (Async ORM) + Celery Task Queue + PostgreSQL + Redis. Package/environment management via `uv`.
 
-### How to Run the Application
+---
 
-#### A. Using Docker (Recommended for Containerized Run)
+## 1. Role-Based Access Control (RBAC) & Testing Credentials
+
+TransitOps supports multi-role users. The interface renders views dynamically based on the logged-in user's roles:
+
+| Role | Accessible Pages | Permissions / Write Privileges |
+|------|------------------|--------------------------------|
+| **Admin** | Dashboard, Fleet, Drivers, Trips, Maintenance, Fuel & Expenses, Analytics, User Management | Full Create/Edit/Delete access on all modules. |
+| **Fleet Manager** | Dashboard, Fleet, Maintenance, Trips (View Only), Fuel & Expenses (View Only), Analytics | Create/Edit/Retire vehicles; create/update/cancel/complete maintenance logs. |
+| **Safety Officer** | Dashboard, Drivers, Trips (View Only) | Create/Edit/Suspend/Activate driver safety profiles. |
+| **Dispatcher** | Dashboard, Fleet (View Only), Drivers (View Only), Trips | Create, Dispatch, Complete, or Cancel trips. |
+| **Financial Analyst** | Dashboard, Fuel & Expenses, Analytics, Fleet (View Only), Maintenance (View Only) | Log fuel entries, create/delete expenses, view reports. |
+
+### Seeding Accounts
+All seed accounts share the same password: **`password123`**
+
+* **Admin:** `admin@transitops.com`
+* **Fleet Manager:** `fleet@transitops.com`
+* **Safety Officer:** `safety@transitops.com`
+* **Dispatcher:** `dispatcher@transitops.com`
+* **Financial Analyst:** `finance@transitops.com`
+
+---
+
+## 2. Backend (BE) Setup
+
+### Option A: Running with Docker (Recommended)
 
 1. Navigate to the backend directory:
    ```bash
    cd backend
    ```
-
-2. Copy the sample environment variables file:
+2. Copy the sample environment file:
    ```bash
    cp .env.example .env
    ```
-
-3. Build and start the services (FastAPI, Celery worker, PostgreSQL, Redis) using Docker Compose:
+3. Start the containers (FastAPI, Celery, PostgreSQL, Redis):
    ```bash
-   docker-compose up -d --build
+   docker compose up -d --build
    ```
+4. Verify endpoints:
+   * **FastAPI Server:** [http://localhost:8000](http://localhost:8000)
+   * **API Docs (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
 
-   - **FastAPI Server**: [http://localhost:8000](http://localhost:8000)
-   - **API Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+### Option B: Running Locally
 
-#### B. Running Locally (For Native Python Run)
-
-1. Make sure you have `uv` installed. Navigate to the backend directory:
+1. Ensure Python 3.10+ and the `uv` tool are installed. Navigate to the backend directory:
    ```bash
    cd backend
    ```
-
-2. Copy the sample environment variables file and configure it:
+2. Copy the environment variables:
    ```bash
    cp .env.example .env
    ```
-
-3. Install dependencies and set up the virtual environment:
+3. Sync dependencies and create virtual environment:
    ```bash
    uv sync
    ```
-
 4. Start the FastAPI development server:
    ```bash
-   uv run uvicorn app.main:app --reload
+   uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
    ```
-
-5. In a separate terminal, start the Celery worker task queue:
+5. In another terminal tab, start the Celery task runner:
    ```bash
    uv run celery -A app.core.celery_app worker --loglevel=info
    ```
 
 ---
 
-### Running the Test Suite
+## 3. Database Seeding
 
-Tests are built using `pytest`, `pytest-asyncio`, and `httpx`.
+Once the database containers or local services are up and running, you need to populate them with the default roles, user accounts, vehicles, drivers, trips, fuel entries, and maintenance logs:
 
-- **To run inside Docker**:
+* **If running in Docker Compose:**
   ```bash
-  cd backend && docker compose exec web pytest
+  cd backend
+  docker compose exec web python seed_dummy_data.py
   ```
 
-- **To run locally**:
+* **If running Locally:**
   ```bash
-  cd backend && uv run pytest
+  cd backend
+  uv run seed_dummy_data.py
   ```
 
 ---
 
-### Backend Directory Structure
+## 4. Frontend (FE) Setup
 
-```text
-backend/
-├── app/
-│   ├── main.py               # FastAPI application loader and lifespan startup
-│   ├── api/                  # Authentication & Profile routing and dependencies
-│   ├── core/                 # Settings, DB session creation, security helpers, and Celery app
-│   ├── models/               # SQLAlchemy ORM model definitions (e.g. User)
-│   ├── schemas/              # Pydantic schemas for input validation and output representation
-│   ├── services/             # CRUD database helper functions
-│   └── tasks/                # Background tasks (e.g. email verification tasks)
-└── tests/                    # API integration tests and unit tests
-```
+### Option A: Running with `pnpm` (Recommended)
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install the packages:
+   ```bash
+   pnpm install
+   ```
+3. Run the development server:
+   ```bash
+   pnpm run dev
+   ```
+
+### Option B: Running with `npm`
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install the packages:
+   ```bash
+   npm install
+   ```
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+The web client will be available at: **[http://localhost:5173](http://localhost:5173)**.
+
+---
+
+## 5. Running the Test Suites
+
+To execute the Pytest backend suites (unit and integration tests):
+
+* **Inside Docker:**
+  ```bash
+  cd backend
+  docker compose exec web pytest
+  ```
+
+* **Locally:**
+  ```bash
+  cd backend
+  uv run pytest
+  ```
