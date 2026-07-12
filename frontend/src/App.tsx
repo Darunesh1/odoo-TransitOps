@@ -12,6 +12,7 @@ import DriversPage from "./pages/DriversPage";
 import TripDispatcherPage from "./pages/TripDispatcherPage";
 import MaintenancePage from './pages/MaintenancePage';
 import FuelExpensesPage from "./pages/FuelExpensesPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 import UserManagement from "./pages/UserManagement";
 
 // Placeholder components for other pages
@@ -135,7 +136,7 @@ function App() {
             element={
               <PrivateRoute>
                 <Layout>
-                  <Analytics />
+                  <AnalyticsPage />
                 </Layout>
               </PrivateRoute>
             }
