@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { driverService } from "../services/driverService";
 import { Driver, DriverCreate, DriverStatus } from "../types/driver";
+import { getErrorMessage } from "../utils/errors";
 
 const DriversPage: React.FC = () => {
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
@@ -146,7 +147,7 @@ const DriversPage: React.FC = () => {
       }
       closeModal();
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Operation failed");
+      alert(getErrorMessage(err));
     }
   };
 
@@ -160,7 +161,7 @@ const DriversPage: React.FC = () => {
         )
       );
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to suspend driver");
+      alert(getErrorMessage(err));
     }
   };
 
@@ -174,7 +175,7 @@ const DriversPage: React.FC = () => {
         )
       );
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to activate driver");
+      alert(getErrorMessage(err));
     }
   };
 

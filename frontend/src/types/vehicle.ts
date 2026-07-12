@@ -1,31 +1,33 @@
 export enum VehicleStatus {
-  AVAILABLE = 'Available',
-  ON_TRIP = 'On Trip',
-  IN_SHOP = 'In Shop',
-  RETIRED = 'Retired',
+  AVAILABLE = 'AVAILABLE',
+  ON_TRIP = 'ON_TRIP',
+  IN_SHOP = 'IN_SHOP',
+  RETIRED = 'RETIRED',
 }
 
 export interface Vehicle {
   id: string;
   registration_number: string;
   name: string;
-  model: string;
-  type: string;
-  capacity: string;
-  domestic: number;
+  model?: string;
+  vehicle_type: string;
+  max_load_capacity: number;
+  odometer: number;
   acquisition_cost: number;
+  region?: string;
   status: VehicleStatus;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface VehicleCreate {
   registration_number: string;
   name: string;
   model?: string;
-  type: string;
-  capacity: string;
-  domestic?: number;
+  vehicle_type: string;
+  max_load_capacity: number;
   acquisition_cost: number;
-  status?: VehicleStatus;
+  region?: string;
 }
 
 export type VehicleUpdate = Partial<VehicleCreate>;
