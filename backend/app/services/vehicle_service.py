@@ -125,7 +125,19 @@ async def update_vehicle(
 
 
 async def retire_vehicle(db: AsyncSession, db_obj: Vehicle) -> Vehicle:
-    """Sets a vehicle status to RETIRED."""
+    """Sets a vehicle status to RETIRED. Prevents retirement if active maintenance logs exist."""
+    from app.models.maintenance_log import MaintenanceLog, MaintenanceStatus
+    active_maint_query = select(MaintenanceLog).where(
+        MaintenanceLog.vehicle_id == db_obj.id,
+        MaintenanceLog.status == MaintenanceStatus.ACTIVE
+    )
+    result = await db.execute(active_maint_query)
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot retire a vehicle while it has an active maintenance log.",
+        )
+
     db_obj.status = VehicleStatus.RETIRED
     try:
         db.add(db_obj)

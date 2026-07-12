@@ -4,7 +4,7 @@ from app.services.user_service import (
     get_user_by_id,
     update_user,
 )
-from app.services import vehicle_service, driver_service, trip_service
+from app.services import vehicle_service, driver_service, trip_service, maintenance_service
 
 __all__ = [
     "create_user",
@@ -14,7 +14,9 @@ __all__ = [
     "vehicle_service",
     "driver_service",
     "trip_service",
+    "maintenance_service",
 ]
+
 
 
 
