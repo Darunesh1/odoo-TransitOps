@@ -3,13 +3,14 @@ from app.services.user_service import (
     get_user_by_email,
     get_user_by_id,
     update_user,
-    verify_user_email,
 )
+from app.services import vehicle_service
 
 __all__ = [
     "create_user",
     "get_user_by_email",
     "get_user_by_id",
     "update_user",
-    "verify_user_email",
+    "vehicle_service",
 ]
+
