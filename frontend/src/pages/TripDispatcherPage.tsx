@@ -6,8 +6,11 @@ import { Trip, TripCreate, TripStatus, TripCompleteInput } from "../types/trip";
 import { Vehicle } from "../types/vehicle";
 import { Driver, DriverStatus } from "../types/driver";
 import { getErrorMessage } from "../utils/errors";
+import { useAuth } from "../contexts/AuthContext";
 
 const TripDispatcherPage: React.FC = () => {
+  const { user } = useAuth();
+  const userCanMutate = !!user && (user.roles.includes("ADMIN") || user.roles.includes("DISPATCHER") || user.is_superuser);
   // ─── Theme ──────────────────────────────────────────────
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
 
@@ -317,10 +320,11 @@ const TripDispatcherPage: React.FC = () => {
         }}
       >
         {/* Left: Create Trip Form */}
-        <div
-          className="trip-form-section"
-          style={{ flex: "0 0 45%", minWidth: "300px" }}
-        >
+        {userCanMutate && (
+          <div
+            className="trip-form-section"
+            style={{ flex: "0 0 45%", minWidth: "300px" }}
+          >
           <div
             style={{
               backgroundColor: colors.cardBg,
@@ -578,6 +582,7 @@ const TripDispatcherPage: React.FC = () => {
             </form>
           </div>
         </div>
+        )}
 
         {/* Right: Live Board */}
         <div
@@ -656,11 +661,11 @@ const TripDispatcherPage: React.FC = () => {
                     : null;
 
                   const canDispatch =
-                    trip.status === TripStatus.DRAFT && !capacityErr;
-                  const canComplete = trip.status === TripStatus.DISPATCHED;
+                    trip.status === TripStatus.DRAFT && !capacityErr && userCanMutate;
+                  const canComplete = trip.status === TripStatus.DISPATCHED && userCanMutate;
                   const canCancel =
-                    trip.status === TripStatus.DRAFT ||
-                    trip.status === TripStatus.DISPATCHED;
+                    (trip.status === TripStatus.DRAFT ||
+                     trip.status === TripStatus.DISPATCHED) && userCanMutate;
 
                   return (
                     <div

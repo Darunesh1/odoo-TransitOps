@@ -22,7 +22,18 @@ import {
 
 const Sidebar = () => {
   const { logout, user } = useAuth();
-  const isAdmin = user && (user.roles.includes("ADMIN") || user.is_superuser);
+  const isAdmin = !!user && (user.roles.includes("ADMIN") || user.is_superuser);
+  const isFleetManager = !!user && user.roles.includes("FLEET_MANAGER");
+  const isSafetyOfficer = !!user && user.roles.includes("SAFETY_OFFICER");
+  const isDispatcher = !!user && user.roles.includes("DISPATCHER");
+  const isFinancialAnalyst = !!user && user.roles.includes("FINANCIAL_ANALYST");
+
+  const canSeeFleet = isAdmin || isFleetManager || isDispatcher || isFinancialAnalyst;
+  const canSeeDrivers = isAdmin || isSafetyOfficer || isDispatcher;
+  const canSeeTrips = isAdmin || isFleetManager || isSafetyOfficer || isDispatcher;
+  const canSeeMaintenance = isAdmin || isFleetManager || isFinancialAnalyst;
+  const canSeeFuel = isAdmin || isFleetManager || isFinancialAnalyst;
+  const canSeeAnalytics = isAdmin || isFleetManager || isFinancialAnalyst;
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => {
@@ -92,12 +103,12 @@ const Sidebar = () => {
 
   const navItems = [
     { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { path: "/fleet", icon: Truck, label: "Fleet" },
-    { path: "/drivers", icon: User, label: "Drivers" },
-    { path: "/trips", icon: MapPin, label: "Trips" },
-    { path: "/maintenance", icon: Wrench, label: "Maintenance" },
-    { path: "/fuel", icon: Fuel, label: "Fuel & Expenses" },
-    { path: "/analytics", icon: BarChart3, label: "Analytics" },
+    ...(canSeeFleet ? [{ path: "/fleet", icon: Truck, label: "Fleet" }] : []),
+    ...(canSeeDrivers ? [{ path: "/drivers", icon: User, label: "Drivers" }] : []),
+    ...(canSeeTrips ? [{ path: "/trips", icon: MapPin, label: "Trips" }] : []),
+    ...(canSeeMaintenance ? [{ path: "/maintenance", icon: Wrench, label: "Maintenance" }] : []),
+    ...(canSeeFuel ? [{ path: "/fuel", icon: Fuel, label: "Fuel & Expenses" }] : []),
+    ...(canSeeAnalytics ? [{ path: "/analytics", icon: BarChart3, label: "Analytics" }] : []),
     { path: "/documents", icon: FileText, label: "Documents" },
     { path: "/notifications", icon: Bell, label: "Notifications" },
     ...(isAdmin ? [{ path: "/users", icon: User, label: "User Management" }] : []),
